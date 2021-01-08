@@ -487,9 +487,9 @@ using DoesntBreak8 = py::class_<BreaksBase<8>, std::shared_ptr<BreaksBase<8>>>;
 #define CHECK_BASE(N) static_assert(std::is_same<typename DoesntBreak##N::type, BreaksBase<N>>::value, \
         "DoesntBreak" #N " has wrong type!")
 CHECK_BASE(1); CHECK_BASE(2); CHECK_BASE(3); CHECK_BASE(4); CHECK_BASE(5); CHECK_BASE(6); CHECK_BASE(7); CHECK_BASE(8);
-#define CHECK_ALIAS(N) static_assert(DoesntBreak##N::has_alias && std::is_same<typename DoesntBreak##N::type_alias, BreaksTramp<N>>::value, \
+#define CHECK_ALIAS(N) static_assert(DoesntBreak##N::xxx_has_alias && std::is_same<typename DoesntBreak##N::xxx_type_alias, BreaksTramp<N>>::value, \
         "DoesntBreak" #N " has wrong type_alias!")
-#define CHECK_NOALIAS(N) static_assert(!DoesntBreak##N::has_alias && std::is_void<typename DoesntBreak##N::type_alias>::value, \
+#define CHECK_NOALIAS(N) static_assert(!DoesntBreak##N::xxx_has_alias && std::is_void<typename DoesntBreak##N::xxx_type_alias>::value, \
         "DoesntBreak" #N " has type alias, but shouldn't!")
 CHECK_ALIAS(1); CHECK_ALIAS(2); CHECK_NOALIAS(3); CHECK_ALIAS(4); CHECK_NOALIAS(5); CHECK_ALIAS(6); CHECK_ALIAS(7); CHECK_NOALIAS(8);
 #define CHECK_HOLDER(N, TYPE) static_assert(std::is_same<typename DoesntBreak##N::holder_type, std::TYPE##_ptr<BreaksBase<N>>>::value, \

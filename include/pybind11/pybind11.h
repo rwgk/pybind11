@@ -1200,14 +1200,14 @@ class class_ : public detail::generic_type {
 
 public:
     using type = type_;
-    using type_alias = detail::exactly_one_t<is_subtype, void, options...>;
-    constexpr static bool has_alias = !std::is_void<type_alias>::value;
+    using xxx_type_alias = detail::exactly_one_t<is_subtype, void, options...>;
+    constexpr static bool xxx_has_alias = !std::is_void<xxx_type_alias>::value;
     using holder_type = detail::exactly_one_t<is_holder, std::unique_ptr<type>, options...>;
 
     static_assert(detail::all_of<is_valid_class_option<options>...>::value,
             "Unknown/invalid class_ template parameters provided");
 
-    static_assert(!has_alias || std::is_polymorphic<type>::value,
+    static_assert(!xxx_has_alias || std::is_polymorphic<type>::value,
             "Cannot use an alias class with a non-polymorphic type");
 
     PYBIND11_OBJECT(class_, generic_type, PyType_Check)
@@ -1228,8 +1228,8 @@ public:
         record.scope = scope;
         record.name = name;
         record.type = &typeid(type);
-        record.type_size = sizeof(conditional_t<has_alias, type_alias, type>);
-        record.type_align = alignof(conditional_t<has_alias, type_alias, type>&);
+        record.type_size = sizeof(conditional_t<xxx_has_alias, xxx_type_alias, type>);
+        record.type_align = alignof(conditional_t<xxx_has_alias, xxx_type_alias, type>&);
         record.holder_size = sizeof(holder_type);
         record.init_instance = init_instance;
         record.dealloc = dealloc;
@@ -1245,9 +1245,9 @@ public:
 
         generic_type::initialize(record);
 
-        if (has_alias) {
+        if (xxx_has_alias) {
             auto &instances = record.module_local ? registered_local_types_cpp() : get_internals().registered_types_cpp;
-            instances[std::type_index(typeid(type_alias))] = instances[std::type_index(typeid(type))];
+            instances[std::type_index(typeid(xxx_type_alias))] = instances[std::type_index(typeid(type))];
         }
     }
 
