@@ -15,17 +15,23 @@
 #include "pybind11_tests.h"
 #include <atomic>
 #include <iostream>
+#include <mutex>
 #include <thread>
+
+
+std::mutex couterr_mutex;
 
 
 void noisy_function(std::string msg, bool flush) {
 
+    const std::lock_guard<std::mutex> lock(couterr_mutex);
     std::cout << msg;
     if (flush)
         std::cout << std::flush;
 }
 
 void noisy_funct_dual(std::string msg, std::string emsg) {
+    const std::lock_guard<std::mutex> lock(couterr_mutex);
     std::cout << msg;
     std::cerr << emsg;
 }
@@ -37,7 +43,10 @@ struct TestThread {
     TestThread() : t_{nullptr}, stop_{false} {
         auto thread_f = [this] {
             while (!stop_) {
-                std::cout << "x" << std::flush;
+                {
+                    const std::lock_guard<std::mutex> lock(couterr_mutex);
+                    std::cout << "x" << std::flush;
+                }
                 std::this_thread::sleep_for(std::chrono::microseconds(50));
             } };
         t_ = new std::thread(std::move(thread_f));
@@ -72,11 +81,13 @@ TEST_SUBMODULE(iostream, m) {
 
     m.def("captured_output_default", [](std::string msg) {
         py::scoped_ostream_redirect redir;
+        const std::lock_guard<std::mutex> lock(couterr_mutex);
         std::cout << msg << std::flush;
     });
 
     m.def("captured_output", [](std::string msg) {
         py::scoped_ostream_redirect redir(std::cout, py::module_::import("sys").attr("stdout"));
+        const std::lock_guard<std::mutex> lock(couterr_mutex);
         std::cout << msg << std::flush;
     });
 
@@ -86,6 +97,7 @@ TEST_SUBMODULE(iostream, m) {
 
     m.def("captured_err", [](std::string msg) {
         py::scoped_ostream_redirect redir(std::cerr, py::module_::import("sys").attr("stderr"));
+        const std::lock_guard<std::mutex> lock(couterr_mutex);
         std::cerr << msg << std::flush;
     });
 
@@ -96,16 +108,19 @@ TEST_SUBMODULE(iostream, m) {
             py::arg("msg"), py::arg("emsg"));
 
     m.def("raw_output", [](std::string msg) {
+        const std::lock_guard<std::mutex> lock(couterr_mutex);
         std::cout << msg << std::flush;
     });
 
     m.def("raw_err", [](std::string msg) {
+        const std::lock_guard<std::mutex> lock(couterr_mutex);
         std::cerr << msg << std::flush;
     });
 
     m.def("captured_dual", [](std::string msg, std::string emsg) {
         py::scoped_ostream_redirect redirout(std::cout, py::module_::import("sys").attr("stdout"));
         py::scoped_ostream_redirect redirerr(std::cerr, py::module_::import("sys").attr("stderr"));
+        const std::lock_guard<std::mutex> lock(couterr_mutex);
         std::cout << msg << std::flush;
         std::cerr << emsg << std::flush;
     });
