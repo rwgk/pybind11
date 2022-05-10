@@ -31,8 +31,20 @@
 PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 PYBIND11_NAMESPACE_BEGIN(detail)
 
-template <typename type, typename SFINAE = void>
+namespace {
+struct unique_to_translation_unit {};
+} // namespace
+
+struct global_caster {};
+
+template <typename T, typename = unique_to_translation_unit>
+struct caster_scope {
+    using select = global_caster;
+};
+
+template <typename type, typename SFINAE = void, typename = typename caster_scope<type>::select>
 class type_caster : public type_caster_base<type> {};
+
 template <typename type>
 using make_caster = type_caster<intrinsic_t<type>>;
 
