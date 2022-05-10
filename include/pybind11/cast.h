@@ -42,7 +42,10 @@ struct caster_scope {
     using select = global_caster;
 };
 
-template <typename type, typename SFINAE = void, typename = typename caster_scope<type>::select>
+template <typename type>
+using caster_scope_select = typename caster_scope<type>::select;
+
+template <typename type, typename SFINAE = void, typename = caster_scope_select<type>>
 class type_caster : public type_caster_base<type> {};
 
 template <typename type>
