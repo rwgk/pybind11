@@ -85,7 +85,7 @@ public:
     cpp_function(std::nullptr_t) {}
 
     /// Construct a cpp_function from a vanilla function pointer
-    template <typename Return, typename... Args, typename... Extra>
+    template <typename Return, typename... Args, typename... Extra, typename = detail::unique_to_translation_unit>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (*f)(Args...), const Extra &...extra) {
         initialize(f, f, extra...);
@@ -94,7 +94,7 @@ public:
     /// Construct a cpp_function from a lambda function (possibly with internal state)
     template <typename Func,
               typename... Extra,
-              typename = detail::enable_if_t<detail::is_lambda<Func>::value>>
+              typename = detail::enable_if_t<detail::is_lambda<Func>::value>, typename = detail::unique_to_translation_unit>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Func &&f, const Extra &...extra) {
         initialize(
@@ -102,7 +102,7 @@ public:
     }
 
     /// Construct a cpp_function from a class method (non-const, no ref-qualifier)
-    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    template <typename Return, typename Class, typename... Arg, typename... Extra, typename = detail::unique_to_translation_unit>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...), const Extra &...extra) {
         initialize(
@@ -114,7 +114,7 @@ public:
     /// Construct a cpp_function from a class method (non-const, lvalue ref-qualifier)
     /// A copy of the overload for non-const functions without explicit ref-qualifier
     /// but with an added `&`.
-    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    template <typename Return, typename Class, typename... Arg, typename... Extra, typename = detail::unique_to_translation_unit>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...) &, const Extra &...extra) {
         initialize(
@@ -124,7 +124,7 @@ public:
     }
 
     /// Construct a cpp_function from a class method (const, no ref-qualifier)
-    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    template <typename Return, typename Class, typename... Arg, typename... Extra, typename = detail::unique_to_translation_unit>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...) const, const Extra &...extra) {
         initialize([f](const Class *c,
@@ -136,7 +136,7 @@ public:
     /// Construct a cpp_function from a class method (const, lvalue ref-qualifier)
     /// A copy of the overload for const functions without explicit ref-qualifier
     /// but with an added `&`.
-    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    template <typename Return, typename Class, typename... Arg, typename... Extra, typename = detail::unique_to_translation_unit>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...) const &, const Extra &...extra) {
         initialize([f](const Class *c,
@@ -163,7 +163,7 @@ protected:
     }
 
     /// Special internal constructor for functors, lambda functions, etc.
-    template <typename Func, typename Return, typename... Args, typename... Extra>
+    template <typename Func, typename Return, typename... Args, typename... Extra, typename = detail::unique_to_translation_unit>
     void initialize(Func &&f, Return (*)(Args...), const Extra &...extra) {
         using namespace detail;
         struct capture {
@@ -245,6 +245,11 @@ protected:
             using Guard = extract_guard_t<Extra...>;
 
             /* Perform the function call */
+            std::cout << "\nLOOOK cast_out::cast " << cast_out::name.text << std::endl;
+            if (std::string(cast_out::name.text) == "atyp_caster1") {
+              long *BAD = nullptr;
+              *BAD = 101;
+            }
             handle result
                 = cast_out::cast(std::move(args_converter).template call<Return, Guard>(cap->f),
                                  policy,

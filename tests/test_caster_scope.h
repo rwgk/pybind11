@@ -1,5 +1,6 @@
 #include "pybind11/pybind11.h"
 
+#include <iostream>
 #include <string>
 
 namespace test_caster_scope {
@@ -49,6 +50,7 @@ struct type_caster_atyp {
     static std::string ss() { return std::to_string(Serial); }
 
     static py::handle cast(atyp &&src, py::return_value_policy /*policy*/, py::handle /*parent*/) {
+        std::cout << "\nLOOOK " << Serial << std::endl;
         return py::str(ss() + "cast_rref:" + src.trace).release();
     }
 

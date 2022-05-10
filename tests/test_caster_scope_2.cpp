@@ -8,12 +8,14 @@ struct caster_scope<test_caster_scope::atyp> {
     using select = test_caster_scope::type_caster_atyp<2>;
 };
 template <>
-struct type_caster<test_caster_scope::atyp> : test_caster_scope::type_caster_atyp<2> {};
+struct type_caster<test_caster_scope::atyp, void, unique_to_translation_unit> : test_caster_scope::type_caster_atyp<2> {};
 } // namespace detail
 } // namespace pybind11
 
 TEST_SUBMODULE(caster_scope_2, m) {
     using namespace test_caster_scope;
+
+    m.def("make_caster_rref", [](){ return py::detail::make_caster<atyp>::cast(atyp(), py::return_value_policy::automatic, py::handle()); });
 
     m.def("rtrn_bval", rtrn_bval);
     m.def("rtrn_rref", rtrn_rref);

@@ -4,7 +4,7 @@
 namespace pybind11 {
 namespace detail {
 template <>
-struct type_caster<test_caster_scope::atyp> : test_caster_scope::type_caster_atyp<1> {};
+struct type_caster<test_caster_scope::atyp, void, unique_to_translation_unit> : test_caster_scope::type_caster_atyp<1> {};
 } // namespace detail
 } // namespace pybind11
 

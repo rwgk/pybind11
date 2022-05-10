@@ -16,6 +16,7 @@
 #include "detail/typeid.h"
 #include "pytypes.h"
 
+#include <iostream> // XXX
 #include <array>
 #include <cstring>
 #include <functional>
@@ -45,7 +46,11 @@ struct caster_scope {
 template <typename type>
 using caster_scope_select = typename caster_scope<type>::select;
 
-template <typename type, typename SFINAE = void, typename = caster_scope_select<type>>
+template <typename type>
+using caster_scope_select_intrinsic_t = caster_scope_select<intrinsic_t<type>>;
+
+// template <typename type, typename SFINAE = void, typename = caster_scope_select<type>>
+template <typename type, typename SFINAE = void, typename = unique_to_translation_unit>
 class type_caster : public type_caster_base<type> {};
 
 template <typename type>
@@ -1062,7 +1067,7 @@ T cast(const handle &handle) {
 }
 
 // C++ type -> py::object
-template <typename T, detail::enable_if_t<!detail::is_pyobject<T>::value, int> = 0>
+template <typename T, typename = detail::caster_scope_select_intrinsic_t<T>, detail::enable_if_t<!detail::is_pyobject<T>::value, int> = 0>
 object cast(T &&value,
             return_value_policy policy = return_value_policy::automatic_reference,
             handle parent = handle()) {
@@ -1076,6 +1081,7 @@ object cast(T &&value,
                  : std::is_lvalue_reference<T>::value ? return_value_policy::copy
                                                       : return_value_policy::move;
     }
+    std::cout << "\nLOOOK object cast(T &&) " << detail::make_caster<T>::name.text << std::endl;
     return reinterpret_steal<object>(
         detail::make_caster<T>::cast(std::forward<T>(value), policy, parent));
 }
