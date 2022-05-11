@@ -11,14 +11,7 @@ def test_call_error_string():
     str_occ_pairs = m.call_error_string(True)
     assert str_occ_pairs == ("ValueError: foo", True) * 3
     str_occ_pairs = m.call_error_string(False)
-    assert str_occ_pairs == (
-        "Unknown internal error occurred",
-        True,
-        "RuntimeError: Unknown internal error occurred",
-        True,
-        "RuntimeError: Unknown internal error occurred",
-        True,
-    )
+    assert str_occ_pairs == ("Unknown internal error occurred", False) * 3
 
 
 def test_std_exception(msg):
