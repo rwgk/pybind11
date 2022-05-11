@@ -106,6 +106,20 @@ struct PythonAlreadySetInDestructor {
 };
 
 TEST_SUBMODULE(exceptions, m) {
+    m.def("call_error_string", [](bool err) {
+        if (err) {
+            PyErr_SetString(PyExc_ValueError, "foo");
+        }
+        std::string s1 = py::detail::error_string();
+        bool e1 = PyErr_Occurred() != nullptr;
+        std::string s2 = py::detail::error_string();
+        bool e2 = PyErr_Occurred() != nullptr;
+        std::string s3 = py::detail::error_string();
+        bool e3 = PyErr_Occurred() != nullptr;
+        PyErr_Clear(); // No matter the behavior, clean up to avoid confusion.
+        return py::make_tuple(s1, e1, s2, e2, s3, e3);
+    });
+
     m.def("throw_std_exception",
           []() { throw std::runtime_error("This exception was intentionally thrown."); });
 

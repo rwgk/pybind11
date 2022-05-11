@@ -7,6 +7,20 @@ import pybind11_cross_module_tests as cm
 from pybind11_tests import exceptions as m
 
 
+def test_call_error_string():
+    str_occ_pairs = m.call_error_string(True)
+    assert str_occ_pairs == ("ValueError: foo", True) * 3
+    str_occ_pairs = m.call_error_string(False)
+    assert str_occ_pairs == (
+        "Unknown internal error occurred",
+        True,
+        "RuntimeError: Unknown internal error occurred",
+        True,
+        "RuntimeError: Unknown internal error occurred",
+        True,
+    )
+
+
 def test_std_exception(msg):
     with pytest.raises(RuntimeError) as excinfo:
         m.throw_std_exception()
