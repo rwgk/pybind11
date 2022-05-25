@@ -680,7 +680,7 @@ public:
     }
     template <typename T>
     void operator=(T &&value) & {
-        get_cache() = reinterpret_borrow<object>(object_or_cast(std::forward<T>(value)));
+        get_cache() = ensure_object(object_or_cast(std::forward<T>(value)));
     }
 
     template <typename T = Policy>
@@ -708,6 +708,9 @@ public:
     }
 
 private:
+    object ensure_object(object &&o) { return std::move(o); }
+    object ensure_object(handle h) { return reinterpret_borrow<object>(h); }
+
     object &get_cache() const {
         if (!cache) {
             cache = Policy::get(obj, key);
