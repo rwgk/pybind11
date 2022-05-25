@@ -708,8 +708,8 @@ public:
     }
 
 private:
-    object ensure_object(object &&o) { return std::move(o); }
-    object ensure_object(handle h) { return reinterpret_borrow<object>(h); }
+    static object ensure_object(object &&o) { return std::move(o); }
+    static object ensure_object(handle h) { return reinterpret_borrow<object>(h); }
 
     object &get_cache() const {
         if (!cache) {
