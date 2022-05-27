@@ -32,7 +32,7 @@ def test_perf_list_accessor():
     inc_refs = m.perf_list_accessor(0, 0)
     print(f"inc_refs={inc_refs}", flush=True)
     if inc_refs is not None:
-        assert inc_refs == [1, 1]
+        assert inc_refs == [1, 0]
     num_iterations = find_num_iterations(
         callable=m.perf_list_accessor,
         callable_args=(0,),
