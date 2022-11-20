@@ -1773,6 +1773,7 @@ public:
                       "py::class_ holder vs type_caster mismatch:"
                       " missing PYBIND11_SMART_HOLDER_TYPE_CASTERS(T)?");
 #ifdef PYBIND11_STRICT_ASSERTS_CLASS_HOLDER_VS_TYPE_CASTER_MIX
+#    ifdef JUNK
         // Strict conditions cannot be enforced universally at the moment (PR #2836).
         static_assert(holder_is_smart_holder == wrapped_type_uses_smart_holder_type_caster,
                       "py::class_ holder vs type_caster mismatch:"
@@ -1782,6 +1783,7 @@ public:
                       "py::class_ holder vs type_caster mismatch:"
                       " missing PYBIND11_TYPE_CASTER_BASE_HOLDER(T, ...)"
                       " or collision with custom py::detail::type_caster<T>?");
+#    endif
 #endif
 
         type_record record;
@@ -2441,9 +2443,9 @@ PYBIND11_NAMESPACE_END(detail)
 
 /// Binds C++ enumerations and enumeration classes to Python
 template <typename Type>
-class enum_ : public class_<Type> {
+class enum_ : public class_<Type, std::unique_ptr<Type>> {
 public:
-    using Base = class_<Type>;
+    using Base = class_<Type, std::unique_ptr<Type>>;
     using Base::attr;
     using Base::def;
     using Base::def_property_readonly;
@@ -2457,7 +2459,7 @@ public:
 
     template <typename... Extra>
     enum_(const handle &scope, const char *name, const Extra &...extra)
-        : class_<Type>(scope, name, extra...), m_base(*this, scope) {
+        : Base(scope, name, extra...), m_base(*this, scope) {
         {
             if (cross_extension_shared_states::native_enum_type_map::get().count(
                     std::type_index(typeid(Type)))

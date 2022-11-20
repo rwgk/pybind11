@@ -38,9 +38,44 @@
 PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 PYBIND11_NAMESPACE_BEGIN(detail)
 
-#ifndef PYBIND11_USE_SMART_HOLDER_AS_DEFAULT
+template <typename EnumType, typename SFINAE = void>
+struct type_caster_enum_type_enabled : std::true_type {};
+
 template <typename T>
+static constexpr bool uses_type_caster_enum_type
+    = std::is_enum<T>::value &&type_caster_enum_type_enabled<T>::value;
+
+template <typename T, typename SFINAE = void>
 class type_caster_for_class_ : public type_caster_base<T> {};
+
+#ifdef PYBIND11_USE_SMART_HOLDER_AS_DEFAULT
+
+template <typename T>
+class type_caster_for_class_<
+    T,
+    detail::enable_if_t<!uses_type_caster_enum_type<T> && !is_std_unique_ptr<T>::value
+                        && !is_std_shared_ptr<T>::value>> : public smart_holder_type_caster<T> {};
+
+template <typename T>
+class type_caster_for_class_<std::shared_ptr<T>,
+                             detail::enable_if_t<!uses_type_caster_enum_type<T>>>
+    : public smart_holder_type_caster<std::shared_ptr<T>> {};
+
+template <typename T>
+class type_caster_for_class_<std::shared_ptr<T const>,
+                             detail::enable_if_t<!uses_type_caster_enum_type<T const>>>
+    : public smart_holder_type_caster<std::shared_ptr<T const>> {};
+
+template <typename T, typename D>
+class type_caster_for_class_<std::unique_ptr<T, D>,
+                             detail::enable_if_t<!uses_type_caster_enum_type<T>>>
+    : public smart_holder_type_caster<std::unique_ptr<T, D>> {};
+
+template <typename T, typename D>
+class type_caster_for_class_<std::unique_ptr<T const, D>,
+                             detail::enable_if_t<!uses_type_caster_enum_type<T const>>>
+    : public smart_holder_type_caster<std::unique_ptr<T const, D>> {};
+
 #endif
 
 template <typename type, typename SFINAE = void>
@@ -145,13 +180,8 @@ private:
     EnumType value;
 };
 
-template <typename EnumType, typename SFINAE = void>
-struct type_caster_enum_type_enabled : std::true_type {};
-
 template <typename EnumType>
-class type_caster<EnumType,
-                  detail::enable_if_t<std::is_enum<EnumType>::value
-                                      && type_caster_enum_type_enabled<EnumType>::value>>
+class type_caster<EnumType, detail::enable_if_t<uses_type_caster_enum_type<EnumType>>>
     : public type_caster_enum_type<EnumType> {};
 
 template <typename T, detail::enable_if_t<std::is_enum<T>::value, int> = 0>

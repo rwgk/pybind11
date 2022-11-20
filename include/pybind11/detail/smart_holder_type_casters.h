@@ -987,25 +987,6 @@ struct smart_holder_type_caster<std::unique_ptr<T const, D>>
 
 #    define PYBIND11_SMART_HOLDER_TYPE_CASTERS(...)
 
-template <typename T>
-class type_caster_for_class_ : public smart_holder_type_caster<T> {};
-
-template <typename T>
-class type_caster_for_class_<std::shared_ptr<T>>
-    : public smart_holder_type_caster<std::shared_ptr<T>> {};
-
-template <typename T>
-class type_caster_for_class_<std::shared_ptr<T const>>
-    : public smart_holder_type_caster<std::shared_ptr<T const>> {};
-
-template <typename T, typename D>
-class type_caster_for_class_<std::unique_ptr<T, D>>
-    : public smart_holder_type_caster<std::unique_ptr<T, D>> {};
-
-template <typename T, typename D>
-class type_caster_for_class_<std::unique_ptr<T const, D>>
-    : public smart_holder_type_caster<std::unique_ptr<T const, D>> {};
-
 #endif
 
 PYBIND11_NAMESPACE_END(detail)
