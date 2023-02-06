@@ -212,8 +212,8 @@ struct function_record {
     /// Pointer to custom destructor for 'data' (if needed)
     void (*free_data)(function_record *ptr) = nullptr;
 
-    /// Return value policy associated with this function
-    return_value_policy policy = return_value_policy::automatic;
+    /// Return value options associated with this function
+    return_value_opts rvo;
 
     /// True if name == '__init__'
     bool is_constructor : 1;
@@ -407,7 +407,11 @@ struct process_attribute<char *> : process_attribute<const char *> {};
 /// Process an attribute indicating the function's return value policy
 template <>
 struct process_attribute<return_value_policy> : process_attribute_default<return_value_policy> {
-    static void init(const return_value_policy &p, function_record *r) { r->policy = p; }
+    static void init(const return_value_policy &p, function_record *r) { r->rvo.policy = p; }
+};
+template <>
+struct process_attribute<return_value_opts> : process_attribute_default<return_value_opts> {
+    static void init(const return_value_opts &rvo, function_record *r) { r->rvo = rvo; }
 };
 
 /// Process an attribute which indicates that this is an overloaded function associated with a

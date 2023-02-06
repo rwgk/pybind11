@@ -676,22 +676,22 @@ public:
     }
 
     template <typename T>
-    static handle cast(T &&src, return_value_policy policy, handle parent) {
-        return cast_impl(std::forward<T>(src), policy, parent, indices{});
+    static handle cast(T &&src, return_value_opts rvo, handle parent) {
+        return cast_impl(std::forward<T>(src), rvo, parent, indices{});
     }
 
     // copied from the PYBIND11_TYPE_CASTER macro
     template <typename T>
-    static handle cast(T *src, return_value_policy policy, handle parent) {
+    static handle cast(T *src, return_value_opts rvo, handle parent) {
         if (!src) {
             return none().release();
         }
-        if (policy == return_value_policy::take_ownership) {
-            auto h = cast(std::move(*src), policy, parent);
+        if (rvo.policy == return_value_policy::take_ownership) {
+            auto h = cast(std::move(*src), rvo, parent);
             delete src;
             return h;
         }
-        return cast(*src, policy, parent);
+        return cast(*src, rvo, parent);
     }
 
     static constexpr auto name
@@ -733,12 +733,11 @@ protected:
 
     /* Implementation: Convert a C++ tuple into a Python tuple */
     template <typename T, size_t... Is>
-    static handle
-    cast_impl(T &&src, return_value_policy policy, handle parent, index_sequence<Is...>) {
-        PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(src, policy, parent);
-        PYBIND11_WORKAROUND_INCORRECT_GCC_UNUSED_BUT_SET_PARAMETER(policy, parent);
+    static handle cast_impl(T &&src, return_value_opts rvo, handle parent, index_sequence<Is...>) {
+        PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(src, rvo, parent);
+        PYBIND11_WORKAROUND_INCORRECT_GCC_UNUSED_BUT_SET_PARAMETER(rvo, parent);
         std::array<object, size> entries{{reinterpret_steal<object>(
-            make_caster<Ts>::cast(std::get<Is>(std::forward<T>(src)), policy, parent))...}};
+            make_caster<Ts>::cast(std::get<Is>(std::forward<T>(src)), rvo /*TODO*/, parent))...}};
         for (const auto &entry : entries) {
             if (!entry) {
                 return handle();
