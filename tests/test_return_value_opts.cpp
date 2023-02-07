@@ -18,5 +18,7 @@ TEST_SUBMODULE(return_value_opts, m) {
         []() { return return_pair_string(); },
         py::return_value_policy::_return_as_bytes);
     m.def(
-        "return_pair_str_bytes", []() { return return_pair_string(); }, py::return_value_opts());
+        "return_pair_str_bytes",
+        []() { return return_pair_string(); },
+        py::return_value_opts(true));
 }

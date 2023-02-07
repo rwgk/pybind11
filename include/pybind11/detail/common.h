@@ -561,15 +561,29 @@ enum class return_value_policy : uint8_t {
 #define PYBIND11_HAS_RETURN_VALUE_POLICY_CLIF_AUTOMATIC
 
 struct return_value_opts {
-    return_value_opts() : policy(return_value_policy::automatic) {}
+    return_value_policy policy = return_value_policy::automatic;
+    bool ad_hoc_flag = false;
+
+    return_value_opts() = default;
 
     // NOLINTNEXTLINE(google-explicit-constructor)
     return_value_opts(return_value_policy policy) : policy(policy) {}
 
+    explicit return_value_opts(bool ad_hoc_flag) : ad_hoc_flag(ad_hoc_flag) {}
+
     // NOLINTNEXTLINE(google-explicit-constructor)
     operator return_value_policy() const { return policy; }
 
-    return_value_policy policy;
+    template <std::size_t I>
+    return_value_opts get() const {
+        if (!ad_hoc_flag) {
+            return policy;
+        }
+        if (I) {
+            return return_value_policy::_return_as_bytes;
+        }
+        return return_value_policy::automatic;
+    }
 };
 
 PYBIND11_NAMESPACE_BEGIN(detail)
