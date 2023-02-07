@@ -737,7 +737,7 @@ protected:
         PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(src, rvo, parent);
         PYBIND11_WORKAROUND_INCORRECT_GCC_UNUSED_BUT_SET_PARAMETER(rvo, parent);
         std::array<object, size> entries{{reinterpret_steal<object>(
-            make_caster<Ts>::cast(std::get<Is>(std::forward<T>(src)), rvo.get<Is>(), parent))...}};
+            make_caster<Ts>::cast(std::get<Is>(std::forward<T>(src)), rvo.get(Is), parent))...}};
         for (const auto &entry : entries) {
             if (!entry) {
                 return handle();

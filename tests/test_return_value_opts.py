@@ -9,6 +9,7 @@ from pybind11_tests import return_value_opts as m
         (m.return_pair_str_str, (str, str)),
         (m.return_pair_bytes_bytes, (bytes, bytes)),
         (m.return_pair_str_bytes, (str, bytes)),
+        (m.return_pair_bytes_str, (bytes, str)),
     ],
 )
 def test_return_pair_bytes_bytes(func, expected):

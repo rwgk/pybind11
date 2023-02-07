@@ -562,27 +562,24 @@ enum class return_value_policy : uint8_t {
 
 struct return_value_opts {
     return_value_policy policy = return_value_policy::automatic;
-    bool ad_hoc_flag = false;
+    std::vector<return_value_opts> vec_rvo;
 
     return_value_opts() = default;
 
     // NOLINTNEXTLINE(google-explicit-constructor)
     return_value_opts(return_value_policy policy) : policy(policy) {}
 
-    explicit return_value_opts(bool ad_hoc_flag) : ad_hoc_flag(ad_hoc_flag) {}
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    return_value_opts(std::initializer_list<return_value_opts> vec_rvo) : vec_rvo(vec_rvo) {}
 
     // NOLINTNEXTLINE(google-explicit-constructor)
     operator return_value_policy() const { return policy; }
 
-    template <std::size_t I>
-    return_value_opts get() const {
-        if (!ad_hoc_flag) {
+    return_value_opts get(std::size_t i) const {
+        if (vec_rvo.size() == 0) {
             return policy;
         }
-        if (I) {
-            return return_value_policy::_return_as_bytes;
-        }
-        return return_value_policy::automatic;
+        return vec_rvo.at(i);
     }
 };
 
