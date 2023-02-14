@@ -304,6 +304,7 @@ PYBIND11_WARNING_POP
 #include <cstring>
 #include <exception>
 #include <forward_list>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -560,28 +561,29 @@ enum class return_value_policy : uint8_t {
 #define PYBIND11_HAS_RETURN_VALUE_POLICY_RETURN_AS_BYTES
 #define PYBIND11_HAS_RETURN_VALUE_POLICY_CLIF_AUTOMATIC
 
+struct return_value_policy_pack;
+using rvpp_lst_t = std::initializer_list<return_value_policy_pack>;
+
 struct return_value_policy_pack {
-    using vec_rvpp_t = std::vector<return_value_policy_pack>;
-    vec_rvpp_t vec_rvpp;
+    rvpp_lst_t rvpp_lst;
     return_value_policy policy = return_value_policy::automatic;
 
-    return_value_policy_pack() = default;
+    constexpr return_value_policy_pack() = default;
 
     // NOLINTNEXTLINE(google-explicit-constructor)
-    return_value_policy_pack(return_value_policy policy) : policy(policy) {}
+    constexpr return_value_policy_pack(return_value_policy policy) : policy(policy) {}
 
     // NOLINTNEXTLINE(google-explicit-constructor)
-    return_value_policy_pack(std::initializer_list<return_value_policy_pack> vec_rvpp)
-        : vec_rvpp(vec_rvpp) {}
+    constexpr return_value_policy_pack(rvpp_lst_t rvpp_lst) : rvpp_lst(rvpp_lst) {}
+
+    constexpr return_value_policy_pack(const rvpp_lst_t &rvpp_lst, return_value_policy policy)
+        : rvpp_lst(rvpp_lst), policy(policy) {}
 
     // NOLINTNEXTLINE(google-explicit-constructor)
-    operator return_value_policy() const { return policy; }
-
-    return_value_policy_pack(const vec_rvpp_t &vec_rvpp, return_value_policy policy)
-        : vec_rvpp(vec_rvpp), policy(policy) {}
+    constexpr operator return_value_policy() const { return policy; }
 
     return_value_policy_pack override_policy(return_value_policy new_policy) const {
-        return return_value_policy_pack(vec_rvpp, new_policy);
+        return return_value_policy_pack(rvpp_lst, new_policy);
     }
 
     return_value_policy_pack
@@ -590,16 +592,16 @@ struct return_value_policy_pack {
     }
 
     return_value_policy_pack get(std::size_t i) const {
-        if (vec_rvpp.empty()) {
+        if (rvpp_lst.size() == 0) {
             return policy;
         }
-        return vec_rvpp.at(i);
+        assert(i < rvpp_lst.size());
+        return return_value_policy_pack{*(rvpp_lst.begin() + i)};
     }
 };
 
 struct from_python_policies {
-    using vec_rvpp_t = std::vector<return_value_policy_pack>;
-    vec_rvpp_t vec_rvpp;
+    rvpp_lst_t rvpp_lst;
     bool convert : 1; ///< True if the argument is allowed to convert when loading
     bool none : 1;    ///< True if None is allowed when loading
 
@@ -609,20 +611,20 @@ struct from_python_policies {
     from_python_policies(bool convert, bool none = false) : convert(convert), none(none) {}
 
     // NOLINTNEXTLINE(google-explicit-constructor)
-    from_python_policies(std::initializer_list<return_value_policy_pack> vec_rvpp)
-        : vec_rvpp(vec_rvpp), convert(false), none(false) {}
+    from_python_policies(rvpp_lst_t rvpp_lst) : rvpp_lst(rvpp_lst), convert(false), none(false) {}
 
     // NOLINTNEXTLINE(google-explicit-constructor)
     operator bool() const { return convert; }
 
-    from_python_policies(const vec_rvpp_t &vec_rvpp, bool convert, bool none)
-        : vec_rvpp(vec_rvpp), convert(convert), none(none) {}
+    from_python_policies(const rvpp_lst_t &rvpp_lst, bool convert, bool none)
+        : rvpp_lst(rvpp_lst), convert(convert), none(none) {}
 
     from_python_policies get(std::size_t i) const {
-        if (vec_rvpp.empty()) {
+        if (rvpp_lst.size() == 0) {
             return from_python_policies(convert, none);
         }
-        return from_python_policies{vec_rvpp.at(i)};
+        assert(i < rvpp_lst.size());
+        return from_python_policies{*(rvpp_lst.begin() + i)};
     }
 };
 

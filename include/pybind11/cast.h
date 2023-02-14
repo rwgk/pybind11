@@ -765,9 +765,12 @@ protected:
     static handle cast_impl(T &&src,
                             const return_value_policy_pack &rvpp,
                             handle parent,
-                            index_sequence<Is...>) {
+                            index_sequence<Is...> iseq) {
         PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(src, rvpp, parent);
         PYBIND11_WORKAROUND_INCORRECT_GCC_UNUSED_BUT_SET_PARAMETER(rvpp, parent);
+        for (std::size_t i = 0; i < iseq.size(); i++) {
+  printf("\nLOOOK i=%lu policy=%d %s:%d\n", i, int(rvpp.get(i).policy), __FILE__, __LINE__); fflush(stdout);
+        }
         std::array<object, size> entries{{reinterpret_steal<object>(
             make_caster<Ts>::cast(std::get<Is>(std::forward<T>(src)), rvpp.get(Is), parent))...}};
         for (const auto &entry : entries) {

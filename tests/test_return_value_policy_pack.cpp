@@ -11,6 +11,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <iostream>
 
 namespace {
 
@@ -64,6 +65,17 @@ std::string call_callback_pass_pair_string(const std::function<std::string(PairS
 TEST_SUBMODULE(return_value_policy_pack, m) {
     auto rvpc = py::return_value_policy::_clif_automatic;
     auto rvpb = py::return_value_policy::_return_as_bytes;
+
+    m.def("debug_rvpp", []() {
+        auto rvpc = py::return_value_policy::_clif_automatic;
+        auto rvpb = py::return_value_policy::_return_as_bytes;
+        py::return_value_policy_pack p({rvpc, rvpb});
+        std::cout << "\nLOOOK " << __LINE__ << ": " << p.rvpp_lst.size() << std::endl;
+        std::cout << "\nLOOOK " << __LINE__ << ": " << p.get(0).rvpp_lst.size() << std::endl;
+        std::cout << "\nLOOOK " << __LINE__ << ": " << int(p.get(0).policy) << std::endl;
+        std::cout << "\nLOOOK " << __LINE__ << ": " << p.get(1).rvpp_lst.size() << std::endl;
+        std::cout << "\nLOOOK " << __LINE__ << ": " << int(p.get(1).policy) << std::endl;
+    });
 
     m.def("return_tuple_str_str", []() { return return_pair_string(); });
     m.def(

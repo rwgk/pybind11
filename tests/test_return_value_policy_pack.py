@@ -126,3 +126,7 @@ def test_wip(func, expected):
         return repr(p)
 
     assert func(cb) == expected
+
+
+def test_debug_rvpp():
+    m.debug_rvpp()
