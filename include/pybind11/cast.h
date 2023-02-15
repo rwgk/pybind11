@@ -1309,7 +1309,9 @@ tuple make_tuple(Args &&...args_) {
 }
 
 template <std::size_t... Is, typename... Args>
-tuple make_tuple_rvpp_impl(const return_value_policy_pack &rvpp, detail::index_sequence<Is...>, Args &&...args_) {
+tuple make_tuple_rvpp_impl(const return_value_policy_pack &rvpp,
+                           detail::index_sequence<Is...>,
+                           Args &&...args_) {
     constexpr size_t size = sizeof...(Args);
     std::array<object, size> args{{reinterpret_steal<object>(
         detail::make_caster<Args>::cast(std::forward<Args>(args_), rvpp.get(Is), nullptr))...}};
@@ -1773,7 +1775,7 @@ public:
         // but the actual function call strictly requires a tuple.
         auto args_list = list();
         using indices = detail::make_index_sequence<sizeof...(Ts)>;
-        ctor_helper(args_list, rvpp,  indices{}, std::forward<Ts>(values)...);
+        ctor_helper(args_list, rvpp, indices{}, std::forward<Ts>(values)...);
 
         m_args = std::move(args_list);
     }
@@ -1795,7 +1797,10 @@ public:
 
 private:
     template <std::size_t... Is, typename... Ts>
-    void ctor_helper(list args_list, const return_value_policy_pack &rvpp, detail::index_sequence<Is...>, Ts &&...values) {
+    void ctor_helper(list args_list,
+                     const return_value_policy_pack &rvpp,
+                     detail::index_sequence<Is...>,
+                     Ts &&...values) {
         using expander = int[];
         (void) expander{0, (process(args_list, rvpp.get(Is), std::forward<Ts>(values)), 0)...};
     }
@@ -1815,7 +1820,8 @@ private:
         args_list.append(std::move(o));
     }
 
-    void process(list &args_list, const return_value_policy_pack & /*rvpp*/, detail::args_proxy ap) {
+    void
+    process(list &args_list, const return_value_policy_pack & /*rvpp*/, detail::args_proxy ap) {
         for (auto a : ap) {
             args_list.append(a);
         }
@@ -1846,7 +1852,9 @@ private:
         m_kwargs[a.name] = std::move(a.value);
     }
 
-    void process(list & /*args_list*/, const return_value_policy_pack & /*rvpp*/, detail::kwargs_proxy kp) {
+    void process(list & /*args_list*/,
+                 const return_value_policy_pack & /*rvpp*/,
+                 detail::kwargs_proxy kp) {
         if (!kp) {
             return;
         }
@@ -1905,9 +1913,9 @@ simple_collector<policy> collect_arguments(Args &&...args) {
     return simple_collector<policy>(std::forward<Args>(args)...);
 }
 
-template <typename... Args,
-          typename = enable_if_t<args_are_all_positional<Args...>()>>
-simple_collector_rvpp collect_arguments_rvpp(const return_value_policy_pack &rvpp, Args &&...args) {
+template <typename... Args, typename = enable_if_t<args_are_all_positional<Args...>()>>
+simple_collector_rvpp collect_arguments_rvpp(const return_value_policy_pack &rvpp,
+                                             Args &&...args) {
     return simple_collector_rvpp(rvpp, std::forward<Args>(args)...);
 }
 
@@ -1926,9 +1934,9 @@ unpacking_collector<policy> collect_arguments(Args &&...args) {
     return unpacking_collector<policy>(std::forward<Args>(args)...);
 }
 
-template <typename... Args,
-          typename = enable_if_t<!args_are_all_positional<Args...>()>>
-unpacking_collector_rvpp collect_arguments_rvpp(const return_value_policy_pack &rvpp, Args &&...args) {
+template <typename... Args, typename = enable_if_t<!args_are_all_positional<Args...>()>>
+unpacking_collector_rvpp collect_arguments_rvpp(const return_value_policy_pack &rvpp,
+                                                Args &&...args) {
     // Following argument order rules for generalized unpacking according to PEP 448
     static_assert(constexpr_last<is_positional, Args...>()
                           < constexpr_first<is_keyword_or_ds, Args...>()
@@ -1947,7 +1955,8 @@ object object_api<Derived>::operator()(Args &&...args) const {
         pybind11_fail("pybind11::object_api<>::operator() PyGILState_Check() failure.");
     }
 #endif
-    return detail::collect_arguments_rvpp(policy, std::forward<Args>(args)...).call(derived().ptr());
+    return detail::collect_arguments_rvpp(policy, std::forward<Args>(args)...)
+        .call(derived().ptr());
 }
 
 template <typename Derived>
