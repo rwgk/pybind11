@@ -232,7 +232,7 @@ TEST_SUBMODULE(return_value_policy_pack, m) {
     m.def("call_level_4_callback_si_s", call_level_4_callback_si);
 
     m.def("nested_callbacks_rtn_b",     nested_callbacks_rtn_string, py::arg("cb").policies(py::return_value_policy_pack(rvpb)), rvpb);
-    m.def("call_level_2_callback_si_b", call_level_2_callback_si,    py::arg("cb").policies(py::return_value_policy_pack(rvpb)), rvpb);
+    m.def("call_level_2_callback_si_b", call_level_2_callback_si,    py::arg("cb").policies(py::return_value_policy_pack(rvpb)));
     m.def("call_level_3_callback_si_b", call_level_3_callback_si, py::arg("cb").policies(py::return_value_policy_pack(rvpb)));
     m.def("call_level_4_callback_si_b", call_level_4_callback_si, py::arg("cb").policies(py::return_value_policy_pack(rvpb)));
 
