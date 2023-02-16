@@ -88,13 +88,21 @@ using level_3_callback_is = std::function<int(level_2_callback_is)>;
 using level_4_callback_is = std::function<int(level_3_callback_is)>;
 
 std::string call_level_1_callback_si(level_1_callback_si cb) { return cb(1001); }
-std::string    call_level_2_callback_si(level_2_callback_si cb) { return cb(level_0_si); }
+std::string    call_level_2_callback_si(level_2_callback_si cb) {
+  printf("\nLOOOK call_level_2_callback_si ENTR %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+    auto retval = cb(level_0_si);
+  printf("\nLOOOK call_level_2_callback_si EXIT %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+    return retval;
+}
 std::string nested_callbacks_rtn_string(level_2_callback_si cb) { return cb(rtn_string); }
 std::string call_level_3_callback_si(level_3_callback_si cb) {
     return cb(call_level_1_callback_si);
 }
 std::string call_level_4_callback_si(level_4_callback_si cb) {
-    return cb(call_level_2_callback_si);
+  printf("\nLOOOK call_level_4_callback_si ENTR %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+    auto retval = cb(call_level_2_callback_si);
+  printf("\nLOOOK call_level_4_callback_si EXIT %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+    return retval;
 }
 
 int call_level_1_callback_is(level_1_callback_is cb) { return cb("101"); }

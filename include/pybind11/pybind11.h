@@ -90,7 +90,9 @@ public:
     template <typename Return, typename... Args, typename... Extra>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (*f)(Args...), const Extra &...extra) {
+  printf("\nLOOOK cpp_function CTOR 3 ENTR %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         initialize(f, f, extra...);
+  printf("\nLOOOK cpp_function CTOR 3 EXIT %s:%d\n", __FILE__, __LINE__); fflush(stdout);
     }
 
     /// Construct a cpp_function from a lambda function (possibly with internal state)
@@ -99,6 +101,7 @@ public:
               typename = detail::enable_if_t<detail::is_lambda<Func>::value>>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Func &&f, const Extra &...extra) {
+  printf("\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         initialize(
             std::forward<Func>(f), (detail::function_signature_t<Func> *) nullptr, extra...);
     }
@@ -107,6 +110,7 @@ public:
     template <typename Return, typename Class, typename... Arg, typename... Extra>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...), const Extra &...extra) {
+  printf("\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         initialize(
             [f](Class *c, Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
             (Return(*)(Class *, Arg...)) nullptr,
@@ -119,6 +123,7 @@ public:
     template <typename Return, typename Class, typename... Arg, typename... Extra>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...) &, const Extra &...extra) {
+  printf("\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         initialize(
             [f](Class *c, Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
             (Return(*)(Class *, Arg...)) nullptr,
@@ -129,6 +134,7 @@ public:
     template <typename Return, typename Class, typename... Arg, typename... Extra>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...) const, const Extra &...extra) {
+  printf("\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         initialize([f](const Class *c,
                        Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
                    (Return(*)(const Class *, Arg...)) nullptr,
@@ -141,6 +147,7 @@ public:
     template <typename Return, typename Class, typename... Arg, typename... Extra>
     // NOLINTNEXTLINE(google-explicit-constructor)
     cpp_function(Return (Class::*f)(Arg...) const &, const Extra &...extra) {
+  printf("\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         initialize([f](const Class *c,
                        Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
                    (Return(*)(const Class *, Arg...)) nullptr,
@@ -167,6 +174,7 @@ protected:
     /// Special internal constructor for functors, lambda functions, etc.
     template <typename Func, typename Return, typename... Args, typename... Extra>
     void initialize(Func &&f, Return (*)(Args...), const Extra &...extra) {
+  printf("\nLOOOK cpp_function initialize ENTR %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         using namespace detail;
         struct capture {
             remove_reference_t<Func> f;
@@ -769,6 +777,7 @@ protected:
 
                     call.init_self = PyTuple_GET_ITEM(args_in, 0);
                     call.args.emplace_back(reinterpret_cast<PyObject *>(&self_value_and_holder));
+  printf("\nLOOOK call.args_policies [0. Inject new-style `self` argument] %s:%d\n", __FILE__, __LINE__); fflush(stdout);
                     call.args_policies.emplace_back(false);
                     ++args_copied;
                 }
@@ -790,6 +799,8 @@ protected:
                         break;
                     }
                     call.args.push_back(arg);
+  printf("\nLOOOK call.args_policies [1. Copy any position arguments given.] %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+  printf("\nLOOOK   arg_rec ? %s  %s:%d\n", arg_rec ? "TRUE" : "FALSE", __FILE__, __LINE__); fflush(stdout);
                     call.args_policies.emplace_back(
                         arg_rec ? from_python_policies(
                             arg_rec->policies.rvpp, arg_rec->policies.convert, false)
@@ -817,6 +828,7 @@ protected:
                         }
                         if (value) {
                             call.args.push_back(value);
+  printf("\nLOOOK call.args_policies [1.5. Fill in any missing pos_only args from defaults if they exist] %s:%d\n", __FILE__, __LINE__); fflush(stdout);
                             call.args_policies.push_back(arg_rec.policies);
                         } else {
                             break;
@@ -865,6 +877,7 @@ protected:
                             }
 
                             call.args.push_back(value);
+  printf("\nLOOOK call.args_policies [2. Check kwargs and, failing that, defaults that may help complete the list] %s:%d\n", __FILE__, __LINE__); fflush(stdout);
                             call.args_policies.push_back(arg_rec.policies);
                         } else {
                             break;
@@ -903,6 +916,7 @@ protected:
                     } else {
                         call.args[func.nargs_pos] = extra_args;
                     }
+  printf("\nLOOOK call.args_policies [4a. If we have a py::args argument, create a new tuple with leftovers] %s:%d\n", __FILE__, __LINE__); fflush(stdout);
                     call.args_policies.emplace_back(false);
                     call.args_ref = std::move(extra_args);
                 }
@@ -913,6 +927,7 @@ protected:
                         kwargs = dict(); // If we didn't get one, send an empty one
                     }
                     call.args.push_back(kwargs);
+  printf("\nLOOOK call.args_policies [4b. If we have a py::kwargs, pass on any remaining kwargs] %s:%d\n", __FILE__, __LINE__); fflush(stdout);
                     call.args_policies.emplace_back(false);
                     call.kwargs_ref = std::move(kwargs);
                 }

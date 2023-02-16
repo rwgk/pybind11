@@ -24,6 +24,15 @@ struct type_caster<std::function<Return(Args...)>> {
 
 public:
     bool load(handle src, from_python_policies fpp) {
+  printf("\nLOOOK type_caster-std::function-load %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+  printf("\nLOOOK                      policy %d  %s:%d\n", int(fpp.rvpp.policy), __FILE__, __LINE__); fflush(stdout);
+  printf("\nLOOOK             vec_rvpp.size() %d  %s:%d\n", int(fpp.rvpp.vec_rvpp.size()), __FILE__, __LINE__); fflush(stdout);
+#ifdef JUNK
+  if (int(fpp.rvpp.policy) == 0) {
+    long *BAD = nullptr;
+    *BAD = 101;
+  }
+#endif
         if (src.is_none()) {
             // Defer accepting None to other overloads (if we aren't in convert mode):
             if (!fpp.convert) {
@@ -119,14 +128,21 @@ public:
 
     template <typename Func>
     static handle cast(Func &&f_, return_value_policy_pack rvpp, handle /* parent */) {
+  printf("\nLOOOK callable-to-python %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+  printf("\nLOOOK             policy %d  %s:%d\n", int(rvpp.policy), __FILE__, __LINE__); fflush(stdout);
+  printf("\nLOOOK    vec_rvpp.size() %d  %s:%d\n", int(rvpp.vec_rvpp.size()), __FILE__, __LINE__); fflush(stdout);
         if (!f_) {
             return none().release();
         }
 
         auto result = f_.template target<function_type>();
         if (result) {
-            return cpp_function(*result, rvpp).release();
+  printf("\nLOOOK              CASE1 ENTR %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+            auto retval = cpp_function(*result, rvpp).release();
+  printf("\nLOOOK              CASE1 EXIT %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+            return retval;
         }
+  printf("\nLOOOK              CASE2 %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         return cpp_function(std::forward<Func>(f_), rvpp).release();
     }
 

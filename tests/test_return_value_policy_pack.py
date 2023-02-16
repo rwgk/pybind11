@@ -186,8 +186,11 @@ def test_WIP2b():
 
 def test_WIP4b():
     def cb_2b(cb):
+        print("\nLOOOK cb_2b ENTR", flush=True)
         r = cb(20)
+        print("\nLOOOK cb_2b HAVE r", flush=True)
         assert isinstance(r, bytes)
+        print("\nLOOOK cb_2b PASS isinstance", flush=True)
         return r
     def cb_4b(cb):
         r = cb(cb_2b)

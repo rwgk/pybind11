@@ -191,7 +191,9 @@ struct function_record {
     function_record()
         : is_constructor(false), is_new_style_constructor(false), is_stateless(false),
           is_operator(false), is_method(false), has_args(false), has_kwargs(false),
-          prepend(false) {}
+          prepend(false) {
+  printf("\nLOOOK function_record CTOR %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+    }
 
     /// Function name
     char *name = nullptr; /* why no C++ strings? They generate heavier code.. */
