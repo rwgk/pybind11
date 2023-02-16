@@ -73,6 +73,13 @@ std::string call_callback_pass_pair_string(const std::function<std::string(PairS
     return cb(p);
 }
 
+std::string rtn_string(int num) { return std::to_string(-num); }
+
+std::string nested_callbacks_rtn_string(
+    const std::function<std::string(std::function<std::string(int)>)> &cb) {
+    return cb(rtn_string);
+}
+
 std::string level_0_si(int num) { return "level_0_si_" + std::to_string(num); }
 int level_0_is(std::string s) { return 100 + std::atoi(s.c_str()); }
 
@@ -222,6 +229,12 @@ TEST_SUBMODULE(return_value_policy_pack, m) {
           call_callback_pass_pair_string,
           py::arg("cb").policies(py::return_value_policy_pack({{rvpb, rvpc}})));
 
+    m.def("nested_callbacks_rtn_s", nested_callbacks_rtn_string);
+    m.def("nested_callbacks_rtn_b",
+          nested_callbacks_rtn_string,
+          py::arg("cb").policies(py::return_value_policy_pack(rvpb)),
+          rvpb);
+
     m.def("call_level_1_callback_si_s", call_level_1_callback_si);
     m.def("call_level_2_callback_si_s", call_level_2_callback_si);
     m.def("call_level_3_callback_si_s", call_level_3_callback_si);
@@ -235,10 +248,4 @@ TEST_SUBMODULE(return_value_policy_pack, m) {
     m.def("call_level_2_callback_is", call_level_2_callback_is);
     m.def("call_level_3_callback_is", call_level_3_callback_is);
     m.def("call_level_4_callback_is", call_level_4_callback_is);
-#ifdef JUNK
-    m.def("nested_callbacks_rtn_b",
-          nested_callbacks_rtn_string,
-          py::arg("cb").policies(py::return_value_policy_pack(rvpb)),
-          rvpb);
-#endif
 }

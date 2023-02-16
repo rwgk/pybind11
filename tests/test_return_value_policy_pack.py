@@ -151,11 +151,11 @@ def test_call_callback_pass_pair_string(func, expected):
 @pytest.mark.parametrize(
     "func, inner_arg, expected",
     [
-        # (m.nested_callbacks_rtn_s, 23, "-23"),
-        # (m.nested_callbacks_rtn_b, 45, b"-45"),
+        (m.nested_callbacks_rtn_s, 23, "-23"),
+        (m.nested_callbacks_rtn_b, 45, b"-45"),
     ],
 )
-def no_test_nested_callbacks_rtn_string(func, inner_arg, expected):
+def test_nested_callbacks_rtn_string(func, inner_arg, expected):
     def cb(inner_cb):
         inner_val = inner_cb(inner_arg)
         assert inner_val == expected
