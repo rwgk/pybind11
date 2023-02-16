@@ -73,12 +73,31 @@ std::string call_callback_pass_pair_string(const std::function<std::string(PairS
     return cb(p);
 }
 
-std::string rtn_string(int num) { return std::to_string(-num); }
+std::string level_0_si(int num) { return "level_0_si_" + std::to_string(num); }
+using level_1_callback_si = std::function<std::string(int)>;
+using level_2_callback_si = std::function<std::string(level_1_callback_si)>;
+using level_3_callback_si = std::function<std::string(level_2_callback_si)>;
+using level_4_callback_si = std::function<std::string(level_3_callback_si)>;
 
-std::string nested_callbacks_rtn_string(
-    const std::function<std::string(std::function<std::string(int)>)> &cb) {
-    return cb(rtn_string);
+int level_0_is(std::string s) { return 100 + std::atoi(s.c_str()); }
+using level_1_callback_is = std::function<int(std::string)>;
+using level_2_callback_is = std::function<int(level_1_callback_is)>;
+using level_3_callback_is = std::function<int(level_2_callback_is)>;
+using level_4_callback_is = std::function<int(level_3_callback_is)>;
+
+std::string call_level_1_callback_si(level_1_callback_si cb) { return cb(1001); }
+std::string call_level_2_callback_si(level_2_callback_si cb) { return cb(level_0_si); }
+std::string call_level_3_callback_si(level_3_callback_si cb) {
+    return cb(call_level_1_callback_si);
 }
+std::string call_level_4_callback_si(level_4_callback_si cb) {
+    return cb(call_level_2_callback_si);
+}
+
+int call_level_1_callback_is(level_1_callback_is cb) { return cb("101"); }
+int call_level_2_callback_is(level_2_callback_is cb) { return cb(level_0_is); }
+int call_level_3_callback_is(level_3_callback_is cb) { return cb(call_level_1_callback_is); }
+int call_level_4_callback_is(level_4_callback_is cb) { return cb(call_level_2_callback_is); }
 
 } // namespace
 
@@ -202,9 +221,19 @@ TEST_SUBMODULE(return_value_policy_pack, m) {
           call_callback_pass_pair_string,
           py::arg("cb").policies(py::return_value_policy_pack({{rvpb, rvpc}})));
 
-    m.def("nested_callbacks_rtn_s", nested_callbacks_rtn_string);
+    m.def("call_level_1_callback_si", call_level_1_callback_si);
+    m.def("call_level_2_callback_si", call_level_2_callback_si);
+    m.def("call_level_3_callback_si", call_level_3_callback_si);
+    m.def("call_level_4_callback_si", call_level_4_callback_si);
+
+    m.def("call_level_1_callback_is", call_level_1_callback_is);
+    m.def("call_level_2_callback_is", call_level_2_callback_is);
+    m.def("call_level_3_callback_is", call_level_3_callback_is);
+    m.def("call_level_4_callback_is", call_level_4_callback_is);
+#ifdef JUNK
     m.def("nested_callbacks_rtn_b",
           nested_callbacks_rtn_string,
           py::arg("cb").policies(py::return_value_policy_pack(rvpb)),
           rvpb);
+#endif
 }
