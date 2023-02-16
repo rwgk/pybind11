@@ -149,20 +149,39 @@ def test_call_callback_pass_pair_string(func, expected):
 
 
 @pytest.mark.parametrize(
-    "func, inner_arg, expected",
+    "func, inner_arg, expected_type, expected_val",
     [
-        (m.nested_callbacks_rtn_s, 23, "-23"),
-        (m.nested_callbacks_rtn_b, 45, b"-45"),
+        (m.nested_callbacks_rtn_s, 23, str, "-23"),
+        (m.nested_callbacks_rtn_b, 45, bytes, b"-45"),
+        (m.call_level_2_callback_si_s, 20, str, "level_0_si_20"),
+        (m.call_level_2_callback_si_b, 20, bytes, b"level_0_si_20"),
     ],
 )
-def test_nested_callbacks_rtn_string(func, inner_arg, expected):
+def test_nested_callbacks_rtn_string(func, inner_arg, expected_type, expected_val):
     def cb(inner_cb):
         inner_val = inner_cb(inner_arg)
-        assert inner_val == expected
+        assert isinstance(inner_val, expected_type)
+        assert inner_val == expected_val
         return inner_val
 
     val = func(cb)
-    assert val == expected
+    assert val == expected_val
+
+
+def test_WIPs():
+    def cb_2s(cb):
+        r = cb(20)
+        assert isinstance(r, str)
+        return r
+    m.call_level_2_callback_si_s(cb_2s)
+
+
+def test_WIPb():
+    def cb_2b(cb):
+        r = cb(20)
+        assert isinstance(r, bytes)
+        return r
+    m.call_level_2_callback_si_b(cb_2b)
 
 
 @pytest.mark.parametrize(
@@ -201,22 +220,6 @@ def test_nested_callbacks_si(level_types):
     assert make_call(1, cb_2) == "cb_2_level_0_si_20"
     assert make_call(2, cb_3) == "cb_3_cb_1_1001"
     assert make_call(3, cb_4) == "cb_4_cb_2_level_0_si_20"
-
-
-def test_WIPs():
-    def cb_2s(cb):
-        r = cb(20)
-        assert isinstance(r, str)
-        return r
-    m.call_level_2_callback_si_s(cb_2s)
-
-
-def test_WIPb():
-    def cb_2b(cb):
-        r = cb(20)
-        assert isinstance(r, bytes)
-        return r
-    m.call_level_2_callback_si_b(cb_2b)
 
 
 def test_nested_callbacks_is():
