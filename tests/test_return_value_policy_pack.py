@@ -165,24 +165,58 @@ def no_test_nested_callbacks_rtn_string(func, inner_arg, expected):
     assert val == expected
 
 
-def test_nested_callbacks_si():
+@pytest.mark.parametrize(
+    "level_types",
+    [
+        "ssss",
+    ],
+)
+def test_nested_callbacks_si(level_types):
+    def cb_helper(cb, arg, l, rtn_prefix):
+        r = cb(arg)
+        if level_types[l] == "s":
+          assert isinstance(r, str)
+          return rtn_prefix + r
+        assert isinstance(r, bytes)
+        return rtn_prefix.encode() + r
+
     def cb_1(i):
         assert isinstance(i, int)
         return "cb_1_" + str(i)
 
     def cb_2(cb):
-        return "cb_2_" + cb(20)
+        return cb_helper(cb, 20, 1, "cb_2_")
 
     def cb_3(cb):
-        return "cb_3_" + cb(cb_1)
+        return cb_helper(cb, cb_1, 2, "cb_3_")
 
     def cb_4(cb):
-        return "cb_4_" + cb(cb_2)
+        return cb_helper(cb, cb_2, 3, "cb_4_")
 
-    assert m.call_level_1_callback_si(cb_1) == "cb_1_1001"
-    assert m.call_level_2_callback_si(cb_2) == "cb_2_level_0_si_20"
-    assert m.call_level_3_callback_si(cb_3) == "cb_3_cb_1_1001"
-    assert m.call_level_4_callback_si(cb_4) == "cb_4_cb_2_level_0_si_20"
+    def make_call(i, cb):
+        call_cb = getattr(m, "call_level_%d_callback_si_%s" % (i + 1, level_types[i]))
+        return call_cb(cb)
+
+    assert make_call(0, cb_1) == "cb_1_1001"
+    assert make_call(1, cb_2) == "cb_2_level_0_si_20"
+    assert make_call(2, cb_3) == "cb_3_cb_1_1001"
+    assert make_call(3, cb_4) == "cb_4_cb_2_level_0_si_20"
+
+
+def test_WIPs():
+    def cb_2s(cb):
+        r = cb(20)
+        assert isinstance(r, str)
+        return r
+    m.call_level_2_callback_si_s(cb_2s)
+
+
+def test_WIPb():
+    def cb_2b(cb):
+        r = cb(20)
+        assert isinstance(r, bytes)
+        return r
+    m.call_level_2_callback_si_b(cb_2b)
 
 
 def test_nested_callbacks_is():

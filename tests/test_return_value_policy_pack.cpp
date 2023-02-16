@@ -74,12 +74,13 @@ std::string call_callback_pass_pair_string(const std::function<std::string(PairS
 }
 
 std::string level_0_si(int num) { return "level_0_si_" + std::to_string(num); }
+int level_0_is(std::string s) { return 100 + std::atoi(s.c_str()); }
+
 using level_1_callback_si = std::function<std::string(int)>;
 using level_2_callback_si = std::function<std::string(level_1_callback_si)>;
 using level_3_callback_si = std::function<std::string(level_2_callback_si)>;
 using level_4_callback_si = std::function<std::string(level_3_callback_si)>;
 
-int level_0_is(std::string s) { return 100 + std::atoi(s.c_str()); }
 using level_1_callback_is = std::function<int(std::string)>;
 using level_2_callback_is = std::function<int(level_1_callback_is)>;
 using level_3_callback_is = std::function<int(level_2_callback_is)>;
@@ -221,10 +222,14 @@ TEST_SUBMODULE(return_value_policy_pack, m) {
           call_callback_pass_pair_string,
           py::arg("cb").policies(py::return_value_policy_pack({{rvpb, rvpc}})));
 
-    m.def("call_level_1_callback_si", call_level_1_callback_si);
-    m.def("call_level_2_callback_si", call_level_2_callback_si);
-    m.def("call_level_3_callback_si", call_level_3_callback_si);
-    m.def("call_level_4_callback_si", call_level_4_callback_si);
+    m.def("call_level_1_callback_si_s", call_level_1_callback_si);
+    m.def("call_level_2_callback_si_s", call_level_2_callback_si);
+    m.def("call_level_3_callback_si_s", call_level_3_callback_si);
+    m.def("call_level_4_callback_si_s", call_level_4_callback_si);
+
+    m.def("call_level_2_callback_si_b", call_level_2_callback_si, py::arg("cb").policies(py::return_value_policy_pack(rvpb)), rvpb);
+    m.def("call_level_2_callback_si_b", call_level_3_callback_si, py::arg("cb").policies(py::return_value_policy_pack(rvpb)));
+    m.def("call_level_2_callback_si_b", call_level_4_callback_si, py::arg("cb").policies(py::return_value_policy_pack(rvpb)));
 
     m.def("call_level_1_callback_is", call_level_1_callback_is);
     m.def("call_level_2_callback_is", call_level_2_callback_is);
