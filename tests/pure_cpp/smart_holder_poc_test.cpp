@@ -276,12 +276,49 @@ TEST_CASE("from_unique_ptr_with_std_function_deleter+as_lvalue_ref", "[S]") {
     REQUIRE(hld.as_lvalue_ref<int>() == 19);
 }
 
+TEST_CASE("from_unique_ptr_with_std_function_deleter+as_lvalue_ref+destructor_called", "[S]") {
+    bool destructor_called = false;
+    std::unique_ptr<int, std::function<void(const int *)>> orig_owner(
+        new int(19),
+        [&destructor_called](const int *raw_ptr) { destructor_called = true; delete raw_ptr; });
+    {
+      auto hld = smart_holder::from_unique_ptr(std::move(orig_owner));
+      REQUIRE(orig_owner.get() == nullptr);
+      REQUIRE(hld.as_lvalue_ref<int>() == 19);
+
+      // At this point, the destructor shouldn't have been called yet, it is moved to the holder.
+      REQUIRE(destructor_called == false);
+    }
+    // Smart holder goes out of scope, the original destructor should have been called.
+    REQUIRE(destructor_called);
+}
+
 TEST_CASE("from_unique_ptr_with_deleter+as_raw_ptr_release_ownership", "[E]") {
     std::unique_ptr<int, helpers::functor_builtin_delete<int>> orig_owner(new int(19));
     auto hld = smart_holder::from_unique_ptr(std::move(orig_owner));
     REQUIRE(orig_owner.get() == nullptr);
     REQUIRE_THROWS_WITH(hld.as_raw_ptr_release_ownership<int>(),
                         "Cannot disown custom deleter (as_raw_ptr_release_ownership).");
+}
+
+TEST_CASE("from_unique_ptr_with_std_function_deleter+as_raw_ptr_release_ownership", "[S]") {
+    bool destructor_called = false;
+    std::unique_ptr<int, std::function<void(const int *)>> orig_owner(
+        new int(19),
+        [&destructor_called](const int *raw_ptr) { destructor_called = true; delete raw_ptr; });
+    {
+      auto hld = smart_holder::from_unique_ptr(std::move(orig_owner));
+      REQUIRE(orig_owner.get() == nullptr);
+
+      // Destructor shouldn't be called during the moving to the smart holder.
+      REQUIRE(destructor_called == false);
+
+      REQUIRE_THROWS_WITH(hld.as_raw_ptr_release_ownership<int>(),
+                          "Cannot disown custom deleter (as_raw_ptr_release_ownership).");
+
+    }
+    // Smart holder goes out of scope, the original destructor should have been called.
+    REQUIRE(destructor_called);
 }
 
 TEST_CASE("from_unique_ptr_with_deleter+as_unique_ptr", "[E]") {
@@ -301,6 +338,27 @@ TEST_CASE("from_unique_ptr_with_deleter+as_unique_ptr_with_deleter1", "[S]") {
     REQUIRE(!hld.has_pointee());
     REQUIRE(*new_owner == 19);
 }
+
+
+TEST_CASE("from_unique_ptr_std_function_with_deleter+as_unique_ptr_with_std_function_deleter1", "[S]") {
+    bool destructor_called = false;
+    using OpaqueDeleter = std::function<void(void *)>;
+
+    std::unique_ptr<int, OpaqueDeleter> orig_owner(
+        new int(19),
+        OpaqueDeleter([&destructor_called](const void *raw_ptr) { destructor_called = true; delete static_cast<const int*>(raw_ptr); }));
+    auto hld = smart_holder::from_unique_ptr(std::move(orig_owner));
+    REQUIRE(orig_owner.get() == nullptr);
+    std::unique_ptr<int, OpaqueDeleter> new_owner = hld.as_unique_ptr<int, OpaqueDeleter>();
+    REQUIRE(!hld.has_pointee());
+    REQUIRE(*new_owner == 19);
+
+    REQUIRE(destructor_called == false);
+    new_owner.reset();
+    REQUIRE(destructor_called);
+    
+}
+
 
 TEST_CASE("from_unique_ptr_with_deleter+as_unique_ptr_with_deleter2", "[E]") {
     std::unique_ptr<int, helpers::functor_builtin_delete<int>> orig_owner(new int(19));
