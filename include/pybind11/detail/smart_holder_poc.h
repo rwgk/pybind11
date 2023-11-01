@@ -70,16 +70,17 @@ static constexpr bool type_has_shared_from_this(const std::enable_shared_from_th
 
 namespace detail {
 template <typename D, bool> struct delete_assigner {
-  static void assign(D&, bool, std::function<void(void*)>&, void(*)(void*)&){}
+  static bool assign(D&, bool, std::function<void(void*)>&, void(*)(void*)&){ return false; }
 };
 
 template <typename D> struct delete_assigner<D, true> {
-  static void assign(D& deleter, bool use_del_fun, std::function<void(void*)>& del_fun, void(*del_ptr)(void*)&){
+  static bool assign(D& deleter, bool use_del_fun, std::function<void(void*)>& del_fun, void(*del_ptr)(void*)&){
     if (use_del_fun) {
       deleter = std::move(del_fun);
     } else {
       deleter = del_ptr;
     }
+    return true;
   }
 };
 }
@@ -105,11 +106,15 @@ struct guarded_delete {
         }
     }
 
-    template <typename T, typename D>
+    template <typename D>
     bool extract_deleter(D& deleter) {
       if (armed_flag) {
-        detail::delete_assigner<D, std::is_same<D, decltype(del_fun)>::value>::assign(deleter, use_del_fun, del_fun, del_ptr);
-        return true;
+        // Just doing a direct assignment here like; 'deleter = del_ptr' doesn't work in case
+        // the deleter is of a type non-constructible from the custom deleter like
+        // helpers::functor_other_delete<int>’, so we use a simple trait system to assign if the
+        // types allow it.
+        armed_flag = false;
+        return detail::delete_assigner<D, std::is_constructible<D, decltype(del_fun)>::value>::assign(deleter, use_del_fun, del_fun, del_ptr);
       }
       return false;
     }
@@ -366,23 +371,21 @@ struct smart_holder {
         ensure_use_count_1(context);
         T *raw_ptr = as_raw_ptr_unowned<T>();
 
-        // extract the custom deleter from the holder;
+        // Temporary storage of the deleter function if it exists in the holder, places the
+        // requirement that the deleter is default constructible...
         D extracted_deleter;
 
+        // Extract the deleter function if it exists.
         auto *gd = std::get_deleter<guarded_delete>(vptr);
-
-        // There's no way to remove the deleter from a shared pointer, reach in and extract the
-        // deletion action before the shared pointer destructor invokes it.
-        bool found_deleter = false;
-        if (gd) {
-          found_deleter = gd->extract_deleter<T, D>(extracted_deleter);
-        }
+        const bool found_deleter = gd && gd->extract_deleter<D>(extracted_deleter);
 
         release_ownership();
 
+        // If we have a deleter, pass that onto the unique pointer.
         if (found_deleter) {
           return std::unique_ptr<T, D>(raw_ptr, std::move(extracted_deleter));
         }
+
         // No special destructor.
         return std::unique_ptr<T, D>(raw_ptr);
     }
