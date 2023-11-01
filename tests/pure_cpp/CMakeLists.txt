@@ -9,6 +9,7 @@ else()
 endif()
 
 add_executable(smart_holder_poc_test smart_holder_poc_test.cpp)
+target_compile_options(smart_holder_poc_test PRIVATE "-g")
 pybind11_enable_warnings(smart_holder_poc_test)
 target_link_libraries(smart_holder_poc_test PRIVATE pybind11::headers Catch2::Catch2)
 

@@ -68,6 +68,22 @@ static constexpr bool type_has_shared_from_this(const std::enable_shared_from_th
     return true;
 }
 
+namespace detail {
+template <typename D, bool> struct delete_assigner {
+  static void assign(D&, bool, std::function<void(void*)>&, void(*)(void*)&){}
+};
+
+template <typename D> struct delete_assigner<D, true> {
+  static void assign(D& deleter, bool use_del_fun, std::function<void(void*)>& del_fun, void(*del_ptr)(void*)&){
+    if (use_del_fun) {
+      deleter = std::move(del_fun);
+    } else {
+      deleter = del_ptr;
+    }
+  }
+};
+}
+
 struct guarded_delete {
     std::weak_ptr<void> released_ptr;    // Trick to keep the smart_holder memory footprint small.
     std::function<void(void *)> del_fun; // Rare case.
@@ -87,6 +103,15 @@ struct guarded_delete {
                 del_ptr(raw_ptr);
             }
         }
+    }
+
+    template <typename T, typename D>
+    bool extract_deleter(D& deleter) {
+      if (armed_flag) {
+        detail::delete_assigner<D, std::is_same<D, decltype(del_fun)>::value>::assign(deleter, use_del_fun, del_fun, del_ptr);
+        return true;
+      }
+      return false;
     }
 };
 
@@ -340,7 +365,25 @@ struct smart_holder {
         ensure_compatible_rtti_uqp_del<T, D>(context);
         ensure_use_count_1(context);
         T *raw_ptr = as_raw_ptr_unowned<T>();
+
+        // extract the custom deleter from the holder;
+        D extracted_deleter;
+
+        auto *gd = std::get_deleter<guarded_delete>(vptr);
+
+        // There's no way to remove the deleter from a shared pointer, reach in and extract the
+        // deletion action before the shared pointer destructor invokes it.
+        bool found_deleter = false;
+        if (gd) {
+          found_deleter = gd->extract_deleter<T, D>(extracted_deleter);
+        }
+
         release_ownership();
+
+        if (found_deleter) {
+          return std::unique_ptr<T, D>(raw_ptr, std::move(extracted_deleter));
+        }
+        // No special destructor.
         return std::unique_ptr<T, D>(raw_ptr);
     }
 

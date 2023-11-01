@@ -356,7 +356,6 @@ TEST_CASE("from_unique_ptr_std_function_with_deleter+as_unique_ptr_with_std_func
     REQUIRE(destructor_called == false);
     new_owner.reset();
     REQUIRE(destructor_called);
-    
 }
 
 
