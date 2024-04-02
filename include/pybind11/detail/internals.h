@@ -67,9 +67,14 @@ inline PyObject *make_object_base_type(PyTypeObject *metaclass);
 // `Py_LIMITED_API` anyway.
 #    if PYBIND11_INTERNALS_VERSION > 4
 #        define PYBIND11_TLS_KEY_REF Py_tss_t &
-#        if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-// Clang on macOS warns due to `Py_tss_NEEDS_INIT` not specifying an initializer
-// for every field.
+#        if defined(__clang__)
+#            define PYBIND11_TLS_KEY_INIT(var)                                                    \
+                _Pragma("clang diagnostic push")                                         /**/     \
+                    _Pragma("clang diagnostic ignored \"-Wmissing-field-initializers\"") /**/     \
+                    Py_tss_t var                                                                  \
+                    = Py_tss_NEEDS_INIT;                                                          \
+                _Pragma("clang diagnostic pop")
+#        elif defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #            define PYBIND11_TLS_KEY_INIT(var)                                                    \
                 _Pragma("GCC diagnostic push")                                         /**/       \
                     _Pragma("GCC diagnostic ignored \"-Wmissing-field-initializers\"") /**/       \
@@ -313,13 +318,13 @@ struct type_info {
 
 #define PYBIND11_INTERNALS_ID                                                                     \
     "__pybind11_internals_v" PYBIND11_TOSTRING(PYBIND11_INTERNALS_VERSION)                        \
-        PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB PYBIND11_BUILD_ABI         \
-            PYBIND11_BUILD_TYPE "__"
+        PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB                            \
+            PYBIND11_BUILD_ABI PYBIND11_BUILD_TYPE "__"
 
 #define PYBIND11_MODULE_LOCAL_ID                                                                  \
     "__pybind11_module_local_v" PYBIND11_TOSTRING(PYBIND11_INTERNALS_VERSION)                     \
-        PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB PYBIND11_BUILD_ABI         \
-            PYBIND11_BUILD_TYPE "__"
+        PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB                            \
+            PYBIND11_BUILD_ABI PYBIND11_BUILD_TYPE "__"
 
 /// Each module locally stores a pointer to the `internals` data. The data
 /// itself is shared among modules with the same `PYBIND11_INTERNALS_ID`.

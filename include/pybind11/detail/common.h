@@ -10,12 +10,12 @@
 #pragma once
 
 #define PYBIND11_VERSION_MAJOR 2
-#define PYBIND11_VERSION_MINOR 12
+#define PYBIND11_VERSION_MINOR 13
 #define PYBIND11_VERSION_PATCH 0.dev1
 
 // Similar to Python's convention: https://docs.python.org/3/c-api/apiabiversion.html
 // Additional convention: 0xD = dev
-#define PYBIND11_VERSION_HEX 0x020C00D1
+#define PYBIND11_VERSION_HEX 0x020D00D1
 
 // Define some generic pybind11 helper macros for warning management.
 //
@@ -294,6 +294,10 @@ PYBIND11_WARNING_DISABLE_MSVC(4505)
 
 #if defined(copysign)
 #    undef copysign
+#endif
+
+#if defined(PYBIND11_NUMPY_1_ONLY)
+#    define PYBIND11_INTERNAL_NUMPY_1_ONLY_DETECTED
 #endif
 
 #if defined(PYPY_VERSION) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
@@ -921,8 +925,7 @@ using is_template_base_of
     = decltype(is_template_base_of_impl<Base>::check((intrinsic_t<T> *) nullptr));
 #else
 struct is_template_base_of
-    : decltype(is_template_base_of_impl<Base>::check((intrinsic_t<T> *) nullptr)) {
-};
+    : decltype(is_template_base_of_impl<Base>::check((intrinsic_t<T> *) nullptr)){};
 #endif
 
 /// Check if T is an instantiation of the template `Class`. For example:
@@ -1104,14 +1107,14 @@ struct overload_cast_impl {
     }
 
     template <typename Return, typename Class>
-    constexpr auto operator()(Return (Class::*pmf)(Args...), std::false_type = {}) const noexcept
-        -> decltype(pmf) {
+    constexpr auto operator()(Return (Class::*pmf)(Args...),
+                              std::false_type = {}) const noexcept -> decltype(pmf) {
         return pmf;
     }
 
     template <typename Return, typename Class>
-    constexpr auto operator()(Return (Class::*pmf)(Args...) const, std::true_type) const noexcept
-        -> decltype(pmf) {
+    constexpr auto operator()(Return (Class::*pmf)(Args...) const,
+                              std::true_type) const noexcept -> decltype(pmf) {
         return pmf;
     }
 };

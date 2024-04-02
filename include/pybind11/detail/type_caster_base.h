@@ -1184,14 +1184,14 @@ protected:
        does not have a private operator new implementation. A comma operator is used in the
        decltype argument to apply SFINAE to the public copy/move constructors.*/
     template <typename T, typename = enable_if_t<is_copy_constructible<T>::value>>
-    static auto make_copy_constructor(const T *)
-        -> decltype(new T(std::declval<const T>()), Constructor{}) {
+    static auto make_copy_constructor(const T *) -> decltype(new T(std::declval<const T>()),
+                                                             Constructor{}) {
         return [](const void *arg) -> void * { return new T(*reinterpret_cast<const T *>(arg)); };
     }
 
     template <typename T, typename = enable_if_t<is_move_constructible<T>::value>>
-    static auto make_move_constructor(const T *)
-        -> decltype(new T(std::declval<T &&>()), Constructor{}) {
+    static auto make_move_constructor(const T *) -> decltype(new T(std::declval<T &&>()),
+                                                             Constructor{}) {
         return [](const void *arg) -> void * {
             return new T(std::move(*const_cast<T *>(reinterpret_cast<const T *>(arg))));
         };
@@ -1201,13 +1201,17 @@ protected:
     static Constructor make_move_constructor(...) { return nullptr; }
 };
 
+inline std::string quote_cpp_type_name(const std::string &cpp_type_name) {
+    return cpp_type_name; // No-op for now. See PR #4888
+}
+
 PYBIND11_NOINLINE std::string type_info_description(const std::type_info &ti) {
     if (auto *type_data = get_type_info(ti)) {
         handle th((PyObject *) type_data->type);
         return th.attr("__module__").cast<std::string>() + '.'
                + th.attr("__qualname__").cast<std::string>();
     }
-    return clean_type_id(ti.name());
+    return quote_cpp_type_name(clean_type_id(ti.name()));
 }
 
 PYBIND11_NAMESPACE_END(detail)
