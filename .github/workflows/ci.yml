@@ -13,7 +13,7 @@ on:
 permissions: read-all
 
 concurrency:
-  group: test-sh-avl${{ github.ref }}
+  group: test-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -68,6 +68,8 @@ jobs:
           # Extra ubuntu latest job
           - runs-on: ubuntu-latest
             python: '3.11'
+          # Exercise PYBIND11_USE_SMART_HOLDER_AS_DEFAULT
+          # with recent (or ideally latest) released Python version.
           - runs-on: ubuntu-latest
             python: '3.12'
             args: >
@@ -80,6 +82,20 @@ jobs:
             python: '3.12'
             args: >
               -DCMAKE_CXX_FLAGS="/DPYBIND11_USE_SMART_HOLDER_AS_DEFAULT /GR /EHsc"
+          # Exercise PYBIND11_SMART_HOLDER_DISABLE
+          # with recent (or ideally latest) released Python version.
+          - runs-on: ubuntu-latest
+            python: '3.12'
+            args: >
+              -DCMAKE_CXX_FLAGS="-DPYBIND11_SMART_HOLDER_DISABLE"
+          - runs-on: macos-13
+            python: '3.12'
+            args: >
+              -DCMAKE_CXX_FLAGS="-DPYBIND11_SMART_HOLDER_DISABLE"
+          - runs-on: windows-2022
+            python: '3.12'
+            args: >
+              -DCMAKE_CXX_FLAGS="/DPYBIND11_SMART_HOLDER_DISABLE /GR /EHsc"
 
     name: "🐍 ${{ matrix.python }} • ${{ matrix.runs-on }} • x64 ${{ matrix.args }}"
     runs-on: ${{ matrix.runs-on }}
@@ -255,7 +271,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Setup Python ${{ matrix.python-version }} (deadsnakes)
-      uses: deadsnakes/action@v3.1.0
+      uses: deadsnakes/action@v3.2.0
       with:
         python-version: ${{ matrix.python-version }}
         debug: ${{ matrix.python-debug }}

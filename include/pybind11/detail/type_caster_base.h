@@ -16,6 +16,7 @@
 #include <pybind11/trampoline_self_life_support.h>
 
 #include "common.h"
+#include "cpp_conduit.h"
 #include "descr.h"
 #include "dynamic_raw_ptr_cast_if_possible.h"
 #include "internals.h"
@@ -24,8 +25,10 @@
 #include "value_and_holder.h"
 
 #include <cstdint>
+#include <cstring>
 #include <iterator>
 #include <new>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <typeindex>
@@ -475,7 +478,7 @@ inline PyThreadState *get_thread_state_unchecked() {
 void keep_alive_impl(handle nurse, handle patient);
 inline PyObject *make_new_instance(PyTypeObject *type);
 
-#ifdef PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#ifdef PYBIND11_SMART_HOLDER_ENABLED
 
 // PYBIND11:REMINDER: Needs refactoring of existing pybind11 code.
 inline bool deregister_instance(instance *self, void *valptr, const type_info *tinfo);
@@ -832,7 +835,7 @@ struct load_helper : value_and_holder_helper {
 
 PYBIND11_NAMESPACE_END(smart_holder_type_caster_support)
 
-#endif // PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#endif // PYBIND11_SMART_HOLDER_ENABLED
 
 class type_caster_generic {
 public:
@@ -938,7 +941,7 @@ public:
 
     // Base methods for generic caster; there are overridden in copyable_holder_caster
     void load_value(value_and_holder &&v_h) {
-#ifdef PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#ifdef PYBIND11_SMART_HOLDER_ENABLED
         if (typeinfo->holder_enum_v == detail::holder_enum_t::smart_holder) {
             smart_holder_type_caster_support::value_and_holder_helper v_h_helper;
             v_h_helper.loaded_v_h = v_h;
@@ -984,6 +987,13 @@ public:
             if (converter(src.ptr(), value)) {
                 return true;
             }
+        }
+        return false;
+    }
+    bool try_cpp_conduit(handle src) {
+        value = try_raw_pointer_ephemeral_from_cpp_conduit(src, cpptype);
+        if (value != nullptr) {
+            return true;
         }
         return false;
     }
@@ -1118,6 +1128,10 @@ public:
             return true;
         }
 
+        if (convert && cpptype && this_.try_cpp_conduit(src)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -1144,6 +1158,32 @@ public:
     const std::type_info *cpptype = nullptr;
     void *value = nullptr;
 };
+
+inline object cpp_conduit_method(handle self,
+                                 const bytes &pybind11_platform_abi_id,
+                                 const capsule &cpp_type_info_capsule,
+                                 const bytes &pointer_kind) {
+#ifdef PYBIND11_HAS_STRING_VIEW
+    using cpp_str = std::string_view;
+#else
+    using cpp_str = std::string;
+#endif
+    if (cpp_str(pybind11_platform_abi_id) != PYBIND11_PLATFORM_ABI_ID) {
+        return none();
+    }
+    if (std::strcmp(cpp_type_info_capsule.name(), typeid(std::type_info).name()) != 0) {
+        return none();
+    }
+    if (cpp_str(pointer_kind) != "raw_pointer_ephemeral") {
+        throw std::runtime_error("Invalid pointer_kind: \"" + std::string(pointer_kind) + "\"");
+    }
+    const auto *cpp_type_info = cpp_type_info_capsule.get_pointer<const std::type_info>();
+    type_caster_generic caster(*cpp_type_info);
+    if (!caster.load(self, false)) {
+        return none();
+    }
+    return capsule(caster.value, cpp_type_info->name());
+}
 
 /**
  * Determine suitable casting operator for pointer-or-lvalue-casting type casters.  The type caster

@@ -13,6 +13,7 @@
 // IWYU pragma: begin_exports
 #include "detail/class.h"
 #include "detail/dynamic_raw_ptr_cast_if_possible.h"
+#include "detail/exception_translation.h"
 #include "detail/init.h"
 #include "detail/using_smart_holder.h"
 // IWYU pragma: end_exports
@@ -97,24 +98,6 @@ inline std::string replace_newlines_and_squash(const char *text) {
     const size_t str_range = str_end - str_begin + 1;
 
     return result.substr(str_begin, str_range);
-}
-
-// Apply all the extensions translators from a list
-// Return true if one of the translators completed without raising an exception
-// itself. Return of false indicates that if there are other translators
-// available, they should be tried.
-inline bool apply_exception_translators(std::forward_list<ExceptionTranslator> &translators) {
-    auto last_exception = std::current_exception();
-
-    for (auto &translator : translators) {
-        try {
-            translator(last_exception);
-            return true;
-        } catch (...) {
-            last_exception = std::current_exception();
-        }
-    }
-    return false;
 }
 
 #if defined(_MSC_VER)
@@ -614,7 +597,8 @@ protected:
         int index = 0;
         /* Create a nice pydoc rec including all signatures and
            docstrings of the functions in the overload chain */
-        if (chain && options::show_function_signatures()) {
+        if (chain && options::show_function_signatures()
+            && std::strcmp(rec->name, "_pybind11_conduit_v1_") != 0) {
             // First a generic signature
             signatures += rec->name;
             signatures += "(*args, **kwargs)\n";
@@ -623,7 +607,8 @@ protected:
         // Then specific overload signatures
         bool first_user_def = true;
         for (auto *it = chain_start; it != nullptr; it = it->next) {
-            if (options::show_function_signatures()) {
+            if (options::show_function_signatures()
+                && std::strcmp(rec->name, "_pybind11_conduit_v1_") != 0) {
                 if (index > 0) {
                     signatures += '\n';
                 }
@@ -1042,40 +1027,7 @@ protected:
             throw;
 #endif
         } catch (...) {
-            /* When an exception is caught, give each registered exception
-               translator a chance to translate it to a Python exception. First
-               all module-local translators will be tried in reverse order of
-               registration. If none of the module-locale translators handle
-               the exception (or there are no module-locale translators) then
-               the global translators will be tried, also in reverse order of
-               registration.
-
-               A translator may choose to do one of the following:
-
-                - catch the exception and call py::set_error()
-                  to set a standard (or custom) Python exception, or
-                - do nothing and let the exception fall through to the next translator, or
-                - delegate translation to the next translator by throwing a new type of exception.
-             */
-
-            bool handled = with_internals([&](internals &internals) {
-                auto &local_exception_translators
-                    = get_local_internals().registered_exception_translators;
-                if (detail::apply_exception_translators(local_exception_translators)) {
-                    return true;
-                }
-                auto &exception_translators = internals.registered_exception_translators;
-                if (detail::apply_exception_translators(exception_translators)) {
-                    return true;
-                }
-                return false;
-            });
-
-            if (handled) {
-                return nullptr;
-            }
-
-            set_error(PyExc_SystemError, "Exception escaped from default exception translator!");
+            try_translate_exceptions();
             return nullptr;
         }
 
@@ -1633,7 +1585,7 @@ PYBIND11_NAMESPACE_END(detail)
 template <typename T, typename D, typename SFINAE = void>
 struct property_cpp_function : detail::property_cpp_function_classic<T, D> {};
 
-#ifdef PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#ifdef PYBIND11_SMART_HOLDER_ENABLED
 
 PYBIND11_NAMESPACE_BEGIN(detail)
 
@@ -1812,10 +1764,9 @@ struct property_cpp_function<
         detail::both_t_and_d_use_type_caster_base<T, typename D::element_type>>::value>>
     : detail::property_cpp_function_sh_unique_ptr_member<T, D> {};
 
-#endif // PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#endif // PYBIND11_SMART_HOLDER_ENABLED
 
-#if defined(PYBIND11_USE_SMART_HOLDER_AS_DEFAULT)                                                 \
-    && defined(PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT)
+#if defined(PYBIND11_USE_SMART_HOLDER_AS_DEFAULT) && defined(PYBIND11_SMART_HOLDER_ENABLED)
 // NOTE: THIS IS MEANT FOR STRESS-TESTING ONLY!
 //       As of PR #5257, for production use, there is no longer a strong reason to make
 //       smart_holder the default holder:
@@ -1883,7 +1834,7 @@ public:
         // A more fitting name would be uses_unique_ptr_holder.
         record.default_holder = detail::is_instantiation<std::unique_ptr, holder_type>::value;
 
-#ifdef PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#ifdef PYBIND11_SMART_HOLDER_ENABLED
         if (detail::is_instantiation<std::unique_ptr, holder_type>::value) {
             record.holder_enum_v = detail::holder_enum_t::std_unique_ptr;
         } else if (detail::is_instantiation<std::shared_ptr, holder_type>::value) {
@@ -1913,6 +1864,7 @@ public:
                     = instances[std::type_index(typeid(type))];
             });
         }
+        def("_pybind11_conduit_v1_", cpp_conduit_method);
     }
 
     template <typename Base, detail::enable_if_t<is_base<Base>::value, int> = 0>
@@ -2228,7 +2180,7 @@ private:
         init_holder(inst, v_h, (const holder_type *) holder_ptr, v_h.value_ptr<type>());
     }
 
-#ifdef PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#ifdef PYBIND11_SMART_HOLDER_ENABLED
 
     template <typename WrappedType>
     static bool try_initialization_using_shared_from_this(holder_type *, WrappedType *, ...) {
@@ -2289,7 +2241,7 @@ private:
         v_h.set_holder_constructed();
     }
 
-#endif // PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#endif // PYBIND11_SMART_HOLDER_ENABLED
 
     /// Deallocates an instance; via holder, if constructed; otherwise via operator delete.
     static void dealloc(detail::value_and_holder &v_h) {
@@ -2331,7 +2283,7 @@ private:
     }
 };
 
-#ifdef PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT
+#ifdef PYBIND11_SMART_HOLDER_ENABLED
 
 // Supports easier switching between py::class_<T> and py::class_<T, py::smart_holder>:
 // users can simply replace the `_` in `class_` with `h` or vice versa.

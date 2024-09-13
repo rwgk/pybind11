@@ -254,6 +254,11 @@ enum class holder_enum_t : uint8_t {
 
 #endif
 
+#if defined(PYBIND11_HAS_INTERNALS_WITH_SMART_HOLDER_SUPPORT)                                     \
+    && !defined(PYBIND11_SMART_HOLDER_DISABLE)
+#    define PYBIND11_SMART_HOLDER_ENABLED
+#endif
+
 /// Additional type information which does not fit into the PyTypeObject.
 /// Changes to this struct also require bumping `PYBIND11_INTERNALS_VERSION`.
 struct type_info {
@@ -344,15 +349,17 @@ struct type_info {
 #    define PYBIND11_INTERNALS_KIND ""
 #endif
 
+#define PYBIND11_PLATFORM_ABI_ID                                                                  \
+    PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB PYBIND11_BUILD_ABI             \
+        PYBIND11_BUILD_TYPE
+
 #define PYBIND11_INTERNALS_ID                                                                     \
     "__pybind11_internals_v" PYBIND11_TOSTRING(PYBIND11_INTERNALS_VERSION)                        \
-        PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB                            \
-            PYBIND11_BUILD_ABI PYBIND11_BUILD_TYPE "__"
+        PYBIND11_PLATFORM_ABI_ID "__"
 
 #define PYBIND11_MODULE_LOCAL_ID                                                                  \
     "__pybind11_module_local_v" PYBIND11_TOSTRING(PYBIND11_INTERNALS_VERSION)                     \
-        PYBIND11_INTERNALS_KIND PYBIND11_COMPILER_TYPE PYBIND11_STDLIB                            \
-            PYBIND11_BUILD_ABI PYBIND11_BUILD_TYPE "__"
+        PYBIND11_PLATFORM_ABI_ID "__"
 
 /// Each module locally stores a pointer to the `internals` data. The data
 /// itself is shared among modules with the same `PYBIND11_INTERNALS_ID`.
