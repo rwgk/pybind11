@@ -638,10 +638,13 @@ protected:
 
             object scope_module = detail::get_scope_module(rec->scope);
             auto module_tuple = make_tuple(scope_module ? scope_module : none(), py_func_rec);
-            m_ptr = PyCFunction_NewEx(rec->def, py_func_rec.ptr(), module_tuple.ptr());
+            m_ptr = PyCFunction_NewEx(rec->def, nullptr/*py_func_rec.ptr()*/, module_tuple.ptr());
             if (!m_ptr) {
                 pybind11_fail("cpp_function::cpp_function(): Could not allocate function object");
             }
+fflush(stderr); fprintf(stdout, "\nLOOOK RIGHT AFTER PyCFunction_NewEx OPEN %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+            detail::extract_function_record(m_ptr);
+fflush(stderr); fprintf(stdout, "\nLOOOK RIGHT AFTER PyCFunction_NewEx CLOSE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
             if (scope_module) {
                 object module_name;
                 if (PyModule_Check(scope_module.ptr())) {
@@ -651,9 +654,11 @@ protected:
                 }
                 if (module_name) {
                     setattr(handle(m_ptr), "__module__", module_name);
+fflush(stderr); fprintf(stdout, "\nLOOOK RIGHT AFTER setattr(m_ptr, __module__, ...) OPEN %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+            detail::extract_function_record(m_ptr);
+fflush(stderr); fprintf(stdout, "\nLOOOK RIGHT AFTER setattr(m_ptr, __module__, ...) CLOSE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
                 }
             }
-
         } else {
             /* Append at the beginning or end of the overload chain */
             m_ptr = rec->sibling.ptr();
