@@ -532,12 +532,6 @@ struct error_fetch_and_normalize {
     explicit error_fetch_and_normalize(const char *called) {
         PyErr_Fetch(&m_type.ptr(), &m_value.ptr(), &m_trace.ptr());
         if (!m_type) {
-#ifndef JUNK
-            int *BAD = nullptr;
-fflush(stderr); fprintf(stdout, "\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-            *BAD = 101;
-fflush(stderr); fprintf(stdout, "\nLOOOK %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-#endif
             pybind11_fail("Internal error: " + std::string(called)
                           + " called while "
                             "Python error indicator not set.");

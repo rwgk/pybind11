@@ -187,30 +187,14 @@ inline PyObject *reduce_ex_impl(PyObject *self, PyObject *, PyObject *) {
 
 PYBIND11_NAMESPACE_END(function_record_PyTypeObject_methods)
 
-inline PyObject *extract_function_record(PyObject *func_obj) {
-    if (PyCFunction_Check(func_obj) == 0) {
-        pybind11_fail("UNEXPECTED extract_function_record func_obj");
-    }
-    PyCFunctionObject *func = _PyCFunctionObject_CAST(func_obj);
-    PyObject *module = func->m_module;
-    if (module) {
-        if (PyTuple_Check(module)) {
-            if (PyTuple_GET_SIZE(module) == 2) {
-fflush(stderr); fprintf(stdout, "\nLOOOK module_tuple %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-                return PyTuple_GET_ITEM(module, 1);
-            } else {
-fflush(stderr); fprintf(stdout, "\nLOOOK NOT PyTuple_GET_SIZE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-            }
-        } else {
-fflush(stderr); fprintf(stdout, "\nLOOOK NOT PyTuple_Check %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-        }
-    } else {
-fflush(stderr); fprintf(stdout, "\nLOOOK NOT module %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-    }
-    PyObject *self = func->m_self;
+inline PyObject *extract_function_record(PyObject *func) {
+    PyObject *self = PyCFunction_GET_SELF(func);
     if (self) {
-fflush(stderr); fprintf(stdout, "\nLOOOK m_self %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         return self;
+    }
+    PyObject *module = ((PyCFunctionObject *) func)->m_module;
+    if (module && PyTuple_Check(module) && PyTuple_GET_SIZE(module) == 2) {
+        return PyTuple_GET_ITEM(module, 1);
     }
     return nullptr;
 }
