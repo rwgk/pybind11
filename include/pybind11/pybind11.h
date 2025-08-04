@@ -602,10 +602,10 @@ protected:
         detail::function_record *chain = nullptr, *chain_start = rec;
         if (rec->sibling) {
             if (PyCFunction_Check(rec->sibling.ptr())) {
-                auto *self = PyCFunction_GET_SELF(rec->sibling.ptr());
+                auto *self = detail::extract_function_record(rec->sibling.ptr());
                 if (self == nullptr) {
-                    pybind11_fail(
-                        "initialize_generic: Unexpected nullptr from PyCFunction_GET_SELF");
+                    pybind11_fail("initialize_generic: Unexpected nullptr from "
+                                  "detail::extract_function_record");
                 }
                 chain = detail::function_record_ptr_from_PyObject(self);
                 if (chain && !chain->scope.is(rec->scope)) {
@@ -680,7 +680,7 @@ protected:
                 chain_start = rec;
                 rec->next = chain;
                 auto *py_func_rec
-                    = (detail::function_record_PyObject *) PyCFunction_GET_SELF(m_ptr);
+                    = (detail::function_record_PyObject *) detail::extract_function_record(m_ptr);
                 py_func_rec->cpp_func_rec = unique_rec.release();
                 guarded_strdup.release();
             } else {
@@ -2581,7 +2581,7 @@ private:
             return nullptr;
         }
 
-        handle func_self = PyCFunction_GET_SELF(h.ptr());
+        handle func_self = detail::extract_function_record(h.ptr());
         if (!func_self) {
             throw error_already_set();
         }
