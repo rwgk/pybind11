@@ -637,10 +637,23 @@ protected:
             guarded_strdup.release();
 
             object scope_module = detail::get_scope_module(rec->scope);
-            m_ptr = PyCFunction_NewEx(rec->def, py_func_rec.ptr(), scope_module.ptr());
+            auto module_tuple = make_tuple(scope_module ? scope_module : none(), py_func_rec);
+            m_ptr = PyCFunction_NewEx(rec->def, py_func_rec.ptr(), module_tuple.ptr());
             if (!m_ptr) {
                 pybind11_fail("cpp_function::cpp_function(): Could not allocate function object");
             }
+            if (scope_module) {
+                object module_name;
+                if (PyModule_Check(scope_module.ptr())) {
+                    module_name = scope_module.attr("__name__");
+                } else if (PyUnicode_Check(scope_module.ptr())) {
+                    module_name = scope_module;
+                }
+                if (module_name) {
+                    setattr(handle(m_ptr), "__module__", module_name);
+                }
+            }
+
         } else {
             /* Append at the beginning or end of the overload chain */
             m_ptr = rec->sibling.ptr();
