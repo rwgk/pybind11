@@ -641,7 +641,6 @@ protected:
             if (!m_ptr) {
                 pybind11_fail("cpp_function::cpp_function(): Could not allocate function object");
             }
-            setattr(handle(m_ptr), "_pybind11_function_record_", py_func_rec);
         } else {
             /* Append at the beginning or end of the overload chain */
             m_ptr = rec->sibling.ptr();
