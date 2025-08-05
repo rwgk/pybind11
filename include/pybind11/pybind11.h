@@ -641,11 +641,6 @@ protected:
             if (!m_ptr) {
                 pybind11_fail("cpp_function::cpp_function(): Could not allocate function object");
             }
-            object orig_qualname = getattr(handle(m_ptr), "__qualname__", none());
-            if (!orig_qualname.is_none()) {
-                pybind11::str qualname(orig_qualname);
-                setattr(handle(m_ptr), "__qualname__", qualname);
-            }
         } else {
             /* Append at the beginning or end of the overload chain */
             m_ptr = rec->sibling.ptr();
