@@ -187,16 +187,15 @@ inline PyObject *reduce_ex_impl(PyObject *self, PyObject *, PyObject *) {
 
 PYBIND11_NAMESPACE_END(function_record_PyTypeObject_methods)
 
-inline PyObject *extract_function_record(PyObject *func) {
-    PyObject *self = PyCFunction_GET_SELF(func);
-    if (self) {
-        return self;
+inline PyObject *extract_function_record(PyObject *func_obj) {
+    PyObject *self = PyCFunction_GET_SELF(func_obj);
+    if (!self) {
+        set_error(PyExc_RuntimeError,
+                  str("pybind11::detail::extract_function_record(") + repr(func_obj)
+                      + str(") FAILED"));
+        return nullptr;
     }
-    PyObject *module = ((PyCFunctionObject *) func)->m_module;
-    if (module && PyTuple_Check(module) && PyTuple_GET_SIZE(module) == 2) {
-        return PyTuple_GET_ITEM(module, 1);
-    }
-    return nullptr;
+    return self;
 }
 
 PYBIND11_NAMESPACE_END(detail)
