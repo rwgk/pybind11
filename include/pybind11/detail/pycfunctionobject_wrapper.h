@@ -231,7 +231,7 @@ static PyType_Slot cfunc_wrapper_PyType_Slots[] = {
 
 static PyType_Spec cfunc_wrapper_PyType_Spec = {
     // tp_name: keep it internal/namespaced to avoid user confusion
-    "pybind11_detail.cfunc_wrapper",
+    PYBIND11_DUMMY_MODULE_NAME ".cfunc_wrapper",
     sizeof(cfunc_wrapper_PyObject),
     0,
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
