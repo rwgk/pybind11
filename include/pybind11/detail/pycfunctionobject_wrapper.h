@@ -39,7 +39,8 @@ struct cfunc_wrapper_PyObject {
 // Forward decl for the heap type object
 // ---------------------------------------------------------------------------
 
-static PyTypeObject *cfunc_wrapper_PyTypeObject = nullptr;
+// TODO(rwgk): detail::get_local_internals().cfunc_wrapper_py_type
+inline PyTypeObject *cfunc_wrapper_PyTypeObject = nullptr;
 
 // Small RAII helpers for error propagation with pybind11
 inline void throw_error_if(bool cond) {
@@ -52,19 +53,19 @@ inline void throw_error_if(bool cond) {
 // GC support
 // ---------------------------------------------------------------------------
 
-static int cfunc_wrapper_traverse(cfunc_wrapper_PyObject *self, visitproc visit, void *arg) {
+inline int cfunc_wrapper_traverse(cfunc_wrapper_PyObject *self, visitproc visit, void *arg) {
     Py_VISIT(self->inner);
     Py_VISIT(self->qualname);
     return 0;
 }
 
-static int cfunc_wrapper_clear(cfunc_wrapper_PyObject *self) {
+inline int cfunc_wrapper_clear(cfunc_wrapper_PyObject *self) {
     Py_CLEAR(self->inner);
     Py_CLEAR(self->qualname);
     return 0;
 }
 
-static void cfunc_wrapper_dealloc(cfunc_wrapper_PyObject *self) {
+inline void cfunc_wrapper_dealloc(cfunc_wrapper_PyObject *self) {
     PyObject_GC_UnTrack(self);
     (void) cfunc_wrapper_clear(self);
     Py_TYPE(self)->tp_free((PyObject *) self);
@@ -74,7 +75,7 @@ static void cfunc_wrapper_dealloc(cfunc_wrapper_PyObject *self) {
 // __call__: delegate to inner
 // ---------------------------------------------------------------------------
 
-static PyObject *cfunc_wrapper_call(PyObject *self_obj, PyObject *args, PyObject *kwargs) {
+inline PyObject *cfunc_wrapper_call(PyObject *self_obj, PyObject *args, PyObject *kwargs) {
     auto *self = (cfunc_wrapper_PyObject *) self_obj;
     if (self->inner == nullptr) {
         PyErr_SetString(PyExc_RuntimeError, "pybind11 cfunc wrapper: inner is NULL");
@@ -87,7 +88,7 @@ static PyObject *cfunc_wrapper_call(PyObject *self_obj, PyObject *args, PyObject
 // __repr__ (optional, for debugging)
 // ---------------------------------------------------------------------------
 
-static PyObject *cfunc_wrapper_repr(cfunc_wrapper_PyObject *self) {
+inline PyObject *cfunc_wrapper_repr(cfunc_wrapper_PyObject *self) {
     if (self->qualname && PyUnicode_Check(self->qualname)) {
         return PyUnicode_FromFormat("<pybind11.cfunc %U>", self->qualname);
     }
@@ -98,7 +99,7 @@ static PyObject *cfunc_wrapper_repr(cfunc_wrapper_PyObject *self) {
 // getset: expose __qualname__ (read-only); optionally forward __name__/__doc__
 // ---------------------------------------------------------------------------
 
-static PyObject *cfunc_wrapper_get_qualname(cfunc_wrapper_PyObject *self, void *) {
+inline PyObject *cfunc_wrapper_get_qualname(cfunc_wrapper_PyObject *self, void *) {
     if (self->qualname) {
         Py_INCREF(self->qualname);
         return self->qualname;
@@ -110,14 +111,14 @@ static PyObject *cfunc_wrapper_get_qualname(cfunc_wrapper_PyObject *self, void *
     Py_RETURN_NONE;
 }
 
-static PyObject *cfunc_wrapper_get_name(cfunc_wrapper_PyObject *self, void *) {
+inline PyObject *cfunc_wrapper_get_name(cfunc_wrapper_PyObject *self, void *) {
     if (self->inner) {
         return PyObject_GetAttrString(self->inner, "__name__");
     }
     Py_RETURN_NONE;
 }
 
-static PyObject *cfunc_wrapper_get_doc(cfunc_wrapper_PyObject *self, void *) {
+inline PyObject *cfunc_wrapper_get_doc(cfunc_wrapper_PyObject *self, void *) {
     if (self->inner) {
         return PyObject_GetAttrString(self->inner, "__doc__");
     }
@@ -125,7 +126,7 @@ static PyObject *cfunc_wrapper_get_doc(cfunc_wrapper_PyObject *self, void *) {
 }
 
 // NOTE: setters intentionally left NULL → read-only presentation
-static PyGetSetDef cfunc_wrapper_getset[] = {
+inline PyGetSetDef cfunc_wrapper_getset[] = {
     {"__qualname__", (getter)cfunc_wrapper_get_qualname, nullptr,
      "qualified name", nullptr},
     {"__name__",     (getter)cfunc_wrapper_get_name,     nullptr,
@@ -139,7 +140,7 @@ static PyGetSetDef cfunc_wrapper_getset[] = {
 // tp_getattro: first try wrapper's own attributes, then fall back to inner
 // ---------------------------------------------------------------------------
 
-static PyObject *cfunc_wrapper_getattro(PyObject *self_obj, PyObject *name) {
+inline PyObject *cfunc_wrapper_getattro(PyObject *self_obj, PyObject *name) {
     // First try attributes defined on the wrapper (getset above, type attributes)
     PyObject *res = PyObject_GenericGetAttr(self_obj, name);
     if (res != nullptr) {
@@ -159,7 +160,7 @@ static PyObject *cfunc_wrapper_getattro(PyObject *self_obj, PyObject *name) {
 // tp_descr_get: delegate binding to inner descr_get, then re-wrap the result
 // ---------------------------------------------------------------------------
 
-static PyObject *cfunc_wrapper_descr_get(PyObject *self_obj, PyObject *obj, PyObject *type) {
+inline PyObject *cfunc_wrapper_descr_get(PyObject *self_obj, PyObject *obj, PyObject *type) {
     auto *self = (cfunc_wrapper_PyObject *) self_obj;
     if (!self->inner) {
         Py_INCREF(self_obj);
@@ -203,7 +204,7 @@ static PyObject *cfunc_wrapper_descr_get(PyObject *self_obj, PyObject *obj, PyOb
 // Optional: hash forwarding (keeps sets/dicts behavior similar to inner)
 // ---------------------------------------------------------------------------
 
-static Py_hash_t cfunc_wrapper_hash(PyObject *self_obj) {
+inline Py_hash_t cfunc_wrapper_hash(PyObject *self_obj) {
     auto *self = (cfunc_wrapper_PyObject *) self_obj;
     if (!self->inner) {
         // Fallback to object identity if inner is missing
@@ -216,7 +217,7 @@ static Py_hash_t cfunc_wrapper_hash(PyObject *self_obj) {
 // Type creation via PyType_FromSpec (heap type)
 // ---------------------------------------------------------------------------
 
-static PyType_Slot cfunc_wrapper_PyType_Slots[] = {
+inline PyType_Slot cfunc_wrapper_PyType_Slots[] = {
     {Py_tp_dealloc,  (void *) cfunc_wrapper_dealloc},
     {Py_tp_traverse, (void *) cfunc_wrapper_traverse},
     {Py_tp_clear,    (void *) cfunc_wrapper_clear},
@@ -229,7 +230,7 @@ static PyType_Slot cfunc_wrapper_PyType_Slots[] = {
     {0, 0}
 };
 
-static PyType_Spec cfunc_wrapper_PyType_Spec = {
+inline PyType_Spec cfunc_wrapper_PyType_Spec = {
     // tp_name: keep it internal/namespaced to avoid user confusion
     PYBIND11_DUMMY_MODULE_NAME ".cfunc_wrapper",
     sizeof(cfunc_wrapper_PyObject),
