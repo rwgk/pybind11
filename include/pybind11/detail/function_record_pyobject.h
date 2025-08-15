@@ -126,7 +126,7 @@ inline bool is_function_record_PyObject(PyObject *obj) {
 
 inline function_record *function_record_ptr_from_PyObject(PyObject *obj) {
     if (is_function_record_PyObject(obj)) {
-        return ((detail::function_record_PyObject *) obj)->cpp_func_rec;
+       return ((detail::function_record_PyObject *) obj)->cpp_func_rec;
     }
     return nullptr;
 }

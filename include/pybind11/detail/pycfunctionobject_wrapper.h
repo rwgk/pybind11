@@ -126,12 +126,12 @@ static PyObject *cfunc_wrapper_get_doc(cfunc_wrapper_PyObject *self, void *) {
 
 // NOTE: setters intentionally left NULL → read-only presentation
 static PyGetSetDef cfunc_wrapper_getset[] = {
-    {(char *)"__qualname__", (getter)cfunc_wrapper_get_qualname, nullptr,
-     (char *)"qualified name", nullptr},
-    {(char *)"__name__",     (getter)cfunc_wrapper_get_name,     nullptr,
-     (char *)"name", nullptr},
-    {(char *)"__doc__",      (getter)cfunc_wrapper_get_doc,      nullptr,
-     (char *)"docstring", nullptr},
+    {"__qualname__", (getter)cfunc_wrapper_get_qualname, nullptr,
+     "qualified name", nullptr},
+    {"__name__",     (getter)cfunc_wrapper_get_name,     nullptr,
+     "name", nullptr},
+    {"__doc__",      (getter)cfunc_wrapper_get_doc,      nullptr,
+     "docstring", nullptr},
     {nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
@@ -231,7 +231,7 @@ static PyType_Slot cfunc_wrapper_PyType_Slots[] = {
 
 static PyType_Spec cfunc_wrapper_PyType_Spec = {
     // tp_name: keep it internal/namespaced to avoid user confusion
-    (char *)"pybind11_detail.cfunc_wrapper",
+    "pybind11_detail.cfunc_wrapper",
     sizeof(cfunc_wrapper_PyObject),
     0,
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
