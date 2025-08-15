@@ -11,6 +11,7 @@
 #include <pybind11/pytypes.h>
 
 #include "common.h"
+#include "pycfunctionobject_wrapper.h"
 
 #include <cstring>
 #include <utility>
