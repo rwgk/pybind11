@@ -40,7 +40,7 @@ struct cfunc_wrapper_PyObject {
 // ---------------------------------------------------------------------------
 
 // TODO(rwgk): detail::get_local_internals().cfunc_wrapper_py_type
-inline PyTypeObject *cfunc_wrapper_PyTypeObject = nullptr;
+static PyTypeObject *cfunc_wrapper_PyTypeObject = nullptr;
 
 // Small RAII helpers for error propagation with pybind11
 inline void throw_error_if(bool cond) {
@@ -126,7 +126,7 @@ inline PyObject *cfunc_wrapper_get_doc(cfunc_wrapper_PyObject *self, void *) {
 }
 
 // NOTE: setters intentionally left NULL → read-only presentation
-inline PyGetSetDef cfunc_wrapper_getset[]
+static PyGetSetDef cfunc_wrapper_getset[]
     = {{"__qualname__", (getter) cfunc_wrapper_get_qualname, nullptr, "qualified name", nullptr},
        {"__name__", (getter) cfunc_wrapper_get_name, nullptr, "name", nullptr},
        {"__doc__", (getter) cfunc_wrapper_get_doc, nullptr, "docstring", nullptr},
@@ -213,7 +213,7 @@ inline Py_hash_t cfunc_wrapper_hash(PyObject *self_obj) {
 // Type creation via PyType_FromSpec (heap type)
 // ---------------------------------------------------------------------------
 
-inline PyType_Slot cfunc_wrapper_PyType_Slots[]
+static PyType_Slot cfunc_wrapper_PyType_Slots[]
     = {{Py_tp_dealloc, (void *) cfunc_wrapper_dealloc},
        {Py_tp_traverse, (void *) cfunc_wrapper_traverse},
        {Py_tp_clear, (void *) cfunc_wrapper_clear},
@@ -225,7 +225,7 @@ inline PyType_Slot cfunc_wrapper_PyType_Slots[]
        {Py_tp_hash, (void *) cfunc_wrapper_hash},
        {0, 0}};
 
-inline PyType_Spec cfunc_wrapper_PyType_Spec = {
+static PyType_Spec cfunc_wrapper_PyType_Spec = {
     // tp_name: keep it internal/namespaced to avoid user confusion
     PYBIND11_DUMMY_MODULE_NAME ".cfunc_wrapper",
     sizeof(cfunc_wrapper_PyObject),
@@ -280,12 +280,10 @@ inline bool is_cfunc_wrapper(PyObject *obj) {
     return PyObject_TypeCheck(obj, cfunc_wrapper_PyTypeObject);
 }
 
-// If obj is a wrapper, return its inner; otherwise return obj (borrowed).
-inline PyObject *unwrap_cfunction_if_wrapper(PyObject *obj) {
-    if (obj && is_cfunc_wrapper(obj)) {
-        return ((cfunc_wrapper_PyObject *) obj)->inner;
-    }
-    return obj;
+inline PyObject *unwrap_cfunction(PyObject *obj) {
+    assert(obj);
+    assert(is_cfunc_wrapper(obj));
+    return ((cfunc_wrapper_PyObject *) obj)->inner;
 }
 
 // Convenience: get the wrapper type object (borrowed).

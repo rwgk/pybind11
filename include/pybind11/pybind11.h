@@ -637,9 +637,31 @@ protected:
             guarded_strdup.release();
 
             object scope_module = detail::get_scope_module(rec->scope);
-            m_ptr = PyCFunction_NewEx(rec->def, py_func_rec.ptr(), scope_module.ptr());
-            if (!m_ptr) {
+
+            // 1) Create the standard builtin function (PyCFunctionObject).
+            PyObject *cfunc = PyCFunction_NewEx(rec->def, py_func_rec.ptr(), scope_module.ptr());
+            if (!cfunc) {
                 pybind11_fail("cpp_function::cpp_function(): Could not allocate function object");
+            }
+
+            // 2) Compute a short qualname we want to present (module-level: "name";
+            //    method: "Class.name"). We use the class __qualname__ when scope is a type.
+            pybind11::object qualname_obj;
+            if (rec->scope && PyType_Check(rec->scope.ptr())) {
+                std::string cls_qn = pybind11::cast<std::string>(rec->scope.attr("__qualname__"));
+                cls_qn += '.';
+                cls_qn += rec->name;
+                qualname_obj = pybind11::str(cls_qn);
+            } else {
+                qualname_obj = pybind11::str(rec->name);
+            }
+
+            // 3) Wrap the builtin function so we can present a custom __qualname__
+            //    while delegating calls/attributes to the original PyCFunctionObject.
+            PyObject *m_ptr = detail::cfunc_wrapper_New(cfunc, qualname_obj.ptr());
+            Py_DECREF(cfunc); // Owned by wrapper, or error.
+            if (!m_ptr) {
+                throw error_already_set();
             }
         } else {
             /* Append at the beginning or end of the overload chain */
@@ -727,19 +749,23 @@ protected:
             }
         }
 
-        auto *func = (PyCFunctionObject *) m_ptr;
+        PyObject *cfunc = detail::unwrap_cfunction(m_ptr);
+        auto *cfunc_typed = (PyCFunctionObject *) cfunc;
         // Install docstring if it's non-empty (when at least one option is enabled)
         auto *doc = signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str());
-        std::free(const_cast<char *>(PYBIND11_PYCFUNCTION_GET_DOC(func)));
-        PYBIND11_PYCFUNCTION_SET_DOC(func, doc);
+        std::free(const_cast<char *>(PYBIND11_PYCFUNCTION_GET_DOC(cfunc_typed)));
+        PYBIND11_PYCFUNCTION_SET_DOC(cfunc_typed, doc);
 
         if (rec->is_method) {
-            m_ptr = PYBIND11_INSTANCE_METHOD_NEW(m_ptr, rec->scope.ptr());
-            if (!m_ptr) {
+            PyObject *descr = PYBIND11_INSTANCE_METHOD_NEW(cfunc, rec->scope.ptr());
+            if (!descr) {
                 pybind11_fail(
                     "cpp_function::cpp_function(): Could not allocate instance method object");
             }
-            Py_DECREF(func);
+            auto *wrapped = reinterpret_cast<detail::cfunc_wrapper_PyObject *>(m_ptr);
+            PyObject *orig_inner = wrapped->inner;
+            wrapped->inner = descr;
+            Py_DECREF(orig_inner);
         }
     }
 
