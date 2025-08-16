@@ -670,7 +670,7 @@ protected:
 
             // 3) Wrap the builtin function so we can present a custom __qualname__
             //    while delegating calls/attributes to the original PyCFunctionObject.
-            PyObject *m_ptr = detail::cfunc_wrapper_New(cfunc, qualname_obj.ptr());
+            m_ptr = detail::cfunc_wrapper_New(cfunc, qualname_obj.ptr());
             Py_DECREF(cfunc); // Owned by wrapper, or error.
             if (!m_ptr) {
                 throw error_already_set();
