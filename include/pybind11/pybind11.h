@@ -595,17 +595,29 @@ protected:
         rec->args.shrink_to_fit();
         rec->nargs = (std::uint16_t) args;
 
-        if (rec->sibling && PYBIND11_INSTANCE_METHOD_CHECK(rec->sibling.ptr())) {
-            rec->sibling = PYBIND11_INSTANCE_METHOD_GET_FUNCTION(rec->sibling.ptr());
+        // Normalize a local view of the sibling for overload-chain detection,
+        // but DO NOT mutate rec->sibling (it is the published object, now a wrapper).
+        PyObject *sibling_for_chain = nullptr;
+        if (rec->sibling) {
+            sibling_for_chain = rec->sibling.ptr();
+            // If it's our wrapper, unwrap to the inner callable (borrowed):
+            if (detail::is_cfunc_wrapper(sibling_for_chain)) {
+                sibling_for_chain = detail::unwrap_cfunction(sibling_for_chain);
+            }
+            // If it's an instance-method descriptor, get the underlying function (borrowed):
+            if (PYBIND11_INSTANCE_METHOD_CHECK(sibling_for_chain)) {
+                sibling_for_chain = PYBIND11_INSTANCE_METHOD_GET_FUNCTION(sibling_for_chain);
+            }
         }
 
         detail::function_record *chain = nullptr, *chain_start = rec;
         if (rec->sibling) {
-            if (PyCFunction_Check(rec->sibling.ptr())) {
-                auto *self = detail::extract_function_record(rec->sibling.ptr());
+            if (PyCFunction_Check(sibling_for_chain)) {
+                // sibling_for_chain is now a raw PyCFunctionObject (not wrapper, not instancemethod)
+                PyObject *self = PyCFunction_GET_SELF(sibling_for_chain);
                 if (self == nullptr) {
                     pybind11_fail("initialize_generic: Unexpected nullptr from "
-                                  "detail::extract_function_record");
+                                  "PyCFunction_GET_SELF(sibling)");
                 }
                 chain = detail::function_record_ptr_from_PyObject(self);
                 if (chain && !chain->scope.is(rec->scope)) {
