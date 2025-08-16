@@ -761,6 +761,7 @@ protected:
             }
         }
 
+        assert(m_ptr);
         PyObject *cfunc = detail::unwrap_cfunction(m_ptr);
         auto *cfunc_typed = (PyCFunctionObject *) cfunc;
         // Install docstring if it's non-empty (when at least one option is enabled)
