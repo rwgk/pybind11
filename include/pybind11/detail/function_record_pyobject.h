@@ -189,12 +189,26 @@ inline PyObject *reduce_ex_impl(PyObject *self, PyObject *, PyObject *) {
 PYBIND11_NAMESPACE_END(function_record_PyTypeObject_methods)
 
 inline PyObject *extract_function_record(PyObject *func_obj) {
-    PyObject *cfunc = unwrap_cfunction(func_obj);
+    // 1) Unwrap our wrapper, if any.
+    PyObject *cfunc = detail::is_cfunc_wrapper(func_obj)
+                          ? detail::unwrap_cfunction(func_obj)
+                          : func_obj;
+    // 2) If it's an instancemethod wrapper, peel to the underlying function.
+    if (PYBIND11_INSTANCE_METHOD_CHECK(cfunc)) {
+        cfunc = PYBIND11_INSTANCE_METHOD_GET_FUNCTION(cfunc);
+    }
+    // 3) From here we expect a raw PyCFunctionObject.
+    if (!PyCFunction_Check(cfunc)) {
+        set_error(PyExc_RuntimeError,
+                  str("pybind11::detail::extract_function_record(") + repr(func_obj)
+                      + str(") FAILED: not a PyCFunctionObject"));
+        throw error_already_set();
+    }
     PyObject *self = PyCFunction_GET_SELF(cfunc);
     if (!self) {
         set_error(PyExc_RuntimeError,
                   str("pybind11::detail::extract_function_record(") + repr(func_obj)
-                      + str(") FAILED"));
+                      + str(") FAILED: PyCFunction_GET_SELF returned NULL"));
         throw error_already_set();
     }
     return self;
