@@ -780,18 +780,6 @@ protected:
         auto *doc = signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str());
         std::free(const_cast<char *>(PYBIND11_PYCFUNCTION_GET_DOC(cfunc_typed)));
         PYBIND11_PYCFUNCTION_SET_DOC(cfunc_typed, doc);
-
-        if (rec->is_method) {
-            PyObject *descr = PYBIND11_INSTANCE_METHOD_NEW(cfunc, rec->scope.ptr());
-            if (!descr) {
-                pybind11_fail(
-                    "cpp_function::cpp_function(): Could not allocate instance method object");
-            }
-            auto *wrapped = reinterpret_cast<detail::cfunc_wrapper_PyObject *>(m_ptr);
-            PyObject *orig_inner = wrapped->inner;
-            wrapped->inner = descr;
-            Py_DECREF(orig_inner);
-        }
     }
 
     friend void detail::function_record_PyTypeObject_methods::tp_dealloc_impl(PyObject *);
