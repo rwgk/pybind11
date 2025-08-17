@@ -700,8 +700,15 @@ protected:
                 // chain.
                 chain_start = rec;
                 rec->next = chain;
+                // IMPORTANT: the head capsule lives on the *raw* cfunction.
+                // Use the normalized sibling_for_chain (already unwrapped/peeled).
+                PyObject *chain_head_raw = sibling_for_chain;
+                if (!chain_head_raw) {
+                    // Fallback in case sibling_for_chain wasn't set (shouldn't happen)
+                    chain_head_raw = rec->sibling.ptr();
+                }
                 auto *py_func_rec
-                    = (detail::function_record_PyObject *) detail::extract_function_record(m_ptr);
+                    = (detail::function_record_PyObject *) detail::extract_function_record(chain_head_raw);
                 py_func_rec->cpp_func_rec = unique_rec.release();
                 guarded_strdup.release();
             } else {
