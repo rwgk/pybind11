@@ -658,14 +658,19 @@ protected:
 
             // 2) Compute a short qualname we want to present (module-level: "name";
             //    method: "Class.name"). We use the class __qualname__ when scope is a type.
+            const char *fname = (rec->name && *rec->name)
+                                    ? rec->name
+                                    : (rec->def && rec->def->ml_name ? rec->def->ml_name : "");
             pybind11::object qualname_obj;
             if (rec->scope && PyType_Check(rec->scope.ptr())) {
-                std::string cls_qn = pybind11::cast<std::string>(rec->scope.attr("__qualname__"));
-                cls_qn += '.';
-                cls_qn += rec->name;
-                qualname_obj = pybind11::str(cls_qn);
+                std::string cls_qn = rec->scope.attr("__qualname__").cast<std::string>();
+                if (*fname) {
+                    qualname_obj = pybind11::str(cls_qn + "." + fname);
+                } else {
+                    qualname_obj = pybind11::str(cls_qn); // avoid trailing dot
+                }
             } else {
-                qualname_obj = pybind11::str(rec->name);
+                qualname_obj = pybind11::str(fname);
             }
 
             // 3) Wrap the builtin function so we can present a custom __qualname__
