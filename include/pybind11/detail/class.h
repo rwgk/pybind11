@@ -296,15 +296,16 @@ inline void traverse_offset_bases(void *valueptr,
                                   const detail::type_info *tinfo,
                                   instance *self,
                                   bool (*f)(void * /*parentptr*/, instance * /*self*/)) {
+    fflush(stderr); fprintf(stdout, "\nLOOOK _valueptr=PTR0x%016llu traverse_offset_bases tp_name=%s cpp=%s\n", (unsigned long long) valueptr, tinfo->type->tp_name, tinfo->cpptype->name()); fflush(stdout);
     for (handle h : reinterpret_borrow<tuple>(tinfo->type->tp_bases)) {
         if (auto *parent_tinfo = get_type_info((PyTypeObject *) h.ptr())) {
             for (auto &c : parent_tinfo->implicit_casts) {
                 if (c.first == tinfo->cpptype) {
-                    auto *parentptr = c.second(valueptr);
+                    auto *parentptr = c.second(valueptr); // STACK#2
                     if (parentptr != valueptr) {
                         f(parentptr, self);
                     }
-                    traverse_offset_bases(parentptr, parent_tinfo, self, f);
+                    traverse_offset_bases(parentptr, parent_tinfo, self, f); // STACK#3
                     break;
                 }
             }
@@ -356,7 +357,7 @@ inline bool deregister_instance_impl(void *ptr, instance *self) {
 inline void register_instance(instance *self, void *valptr, const type_info *tinfo) {
     register_instance_impl(valptr, self);
     if (!tinfo->simple_ancestors) {
-        traverse_offset_bases(valptr, tinfo, self, register_instance_impl);
+        traverse_offset_bases(valptr, tinfo, self, register_instance_impl); // STACK#4
     }
 }
 

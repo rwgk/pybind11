@@ -656,10 +656,14 @@ handle smart_holder_from_shared_ptr(const std::shared_ptr<T> &src,
     inst_raw_ptr->owned = true;
     void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr();
     valueptr = src_raw_void_ptr;
+    fflush(stderr); fprintf(stdout, "\nLOOOK _st.first=PTR0x%016llu %s:%d\n", (unsigned long long) st.first, __FILE__, __LINE__); fflush(stdout);
+    fflush(stderr); fprintf(stdout, "\nLOOOK _valueptr=PTR0x%016llu %s:%d\n", (unsigned long long) valueptr, __FILE__, __LINE__); fflush(stdout);
 
     auto smhldr
         = smart_holder::from_shared_ptr(std::shared_ptr<void>(src, const_cast<void *>(st.first)));
-    tinfo->init_instance(inst_raw_ptr, static_cast<const void *>(&smhldr));
+    fflush(stderr); fprintf(stdout, "\nLOOOK ___smhldr=PTR0x%016llu %s:%d\n", (unsigned long long) smhldr.vptr.get(), __FILE__, __LINE__); fflush(stdout);
+    tinfo->init_instance(inst_raw_ptr, static_cast<const void *>(&smhldr)); // STACK#6
+    fflush(stderr); fprintf(stdout, "\nLOOOK      NULL=PTR0x%016llu %s:%d\n", (unsigned long long) 0, __FILE__, __LINE__); fflush(stdout);
 
     if (policy == return_value_policy::reference_internal) {
         keep_alive_impl(inst, parent);

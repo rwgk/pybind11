@@ -5,4 +5,6 @@ from pybind11_tests import class_animal as m
 
 def test_animals():
     tiger = m.Tiger()
-    tiger.clone()
+    print(f"\nLOOOK {tiger=!r}", flush=True)
+    cloned = tiger.clone()
+    print(f"\nLOOOK {cloned=!r}", flush=True)

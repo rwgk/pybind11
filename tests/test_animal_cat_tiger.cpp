@@ -28,7 +28,13 @@ public:
     Tiger(const Tiger &) = default;
     Tiger &operator=(const Tiger &) = default;
     ~Tiger() override = default;
-    std::shared_ptr<Animal> clone() const override { return std::make_shared<Tiger>(*this); }
+    std::shared_ptr<Animal> clone() const override {
+        std::shared_ptr<Tiger> sp_tiger = std::make_shared<Tiger>(*this);
+        fflush(stderr); fprintf(stdout, "\nLOOOK _sp_tiger=PTR0x%016llu %s:%d\n", (unsigned long long) sp_tiger.get(), __FILE__, __LINE__); fflush(stdout);
+        std::shared_ptr<Animal> sp_animal = sp_tiger;
+        fflush(stderr); fprintf(stdout, "\nLOOOK sp_animal=PTR0x%016llu %s:%d\n", (unsigned long long) sp_animal.get(), __FILE__, __LINE__); fflush(stdout);
+        return sp_animal;
+    }
 };
 
 TEST_SUBMODULE(class_animal, m) {
