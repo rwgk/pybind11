@@ -301,11 +301,11 @@ inline void traverse_offset_bases(void *valueptr,
         if (auto *parent_tinfo = get_type_info((PyTypeObject *) h.ptr())) {
             for (auto &c : parent_tinfo->implicit_casts) {
                 if (c.first == tinfo->cpptype) {
-                    auto *parentptr = c.second(valueptr); // STACK#2
+                    auto *parentptr = c.second(valueptr);
                     if (parentptr != valueptr) {
                         f(parentptr, self);
                     }
-                    traverse_offset_bases(parentptr, parent_tinfo, self, f); // STACK#3
+                    traverse_offset_bases(parentptr, parent_tinfo, self, f);
                     break;
                 }
             }
@@ -357,7 +357,7 @@ inline bool deregister_instance_impl(void *ptr, instance *self) {
 inline void register_instance(instance *self, void *valptr, const type_info *tinfo) {
     register_instance_impl(valptr, self);
     if (!tinfo->simple_ancestors) {
-        traverse_offset_bases(valptr, tinfo, self, register_instance_impl); // STACK#4
+        traverse_offset_bases(valptr, tinfo, self, register_instance_impl);
     }
 }
 

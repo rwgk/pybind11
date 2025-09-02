@@ -2149,7 +2149,6 @@ public:
     template <typename Base, detail::enable_if_t<is_base<Base>::value, int> = 0>
     static void add_base(detail::type_record &rec) {
         rec.add_base(typeid(Base), [](void *src) -> void * {
-            fflush(stderr); fprintf(stdout, "\nLOOOK add_b_src=PTR0x%016llu %s:%d\n", (unsigned long long) src, __FILE__, __LINE__); fflush(stdout);
             return static_cast<Base *>(reinterpret_cast<type *>(src));
         });
     }
@@ -2488,24 +2487,20 @@ private:
     template <typename H = holder_type,
               detail::enable_if_t<detail::is_smart_holder<H>::value, int> = 0>
     static void init_instance(detail::instance *inst, const void *holder_const_void_ptr) {
-        fflush(stderr); fprintf(stdout, "\nLOOOK init_instance ENTRY %s:%d\n", __FILE__, __LINE__); fflush(stdout);
         // Need for const_cast is a consequence of the type_info::init_instance type:
         // void (*init_instance)(instance *, const void *);
         auto *holder_void_ptr = const_cast<void *>(holder_const_void_ptr);
 
-        auto v_h = inst->get_value_and_holder(detail::get_type_info(typeid(type)));
+        auto v_h = inst->get_value_and_holder(detail::get_type_info(typeid(type))); // TODO:INSPECT
         if (!v_h.instance_registered()) {
-            fflush(stderr); fprintf(stdout, "\nLOOOK BEFORE register_instance %s:%d\n", __FILE__, __LINE__); fflush(stdout);
-            register_instance(inst, v_h.value_ptr(), v_h.type); // STACK#5
-            fflush(stderr); fprintf(stdout, "\nLOOOK _AFTER register_instance %s:%d\n", __FILE__, __LINE__); fflush(stdout);
+            register_instance(inst, v_h.value_ptr(), v_h.type);
             v_h.set_instance_registered();
         }
         auto *uninitialized_location = std::addressof(v_h.holder<holder_type>());
         auto *value_ptr_w_t = v_h.value_ptr<type>();
-        fflush(stderr); fprintf(stdout, "\nLOOOK v.ptr_w_t=PTR0x%016llu %s:%d\n", (unsigned long long) value_ptr_w_t, __FILE__, __LINE__); fflush(stdout);
         // Try downcast from `type` to `type_alias`:
         inst->is_alias
-            = detail::dynamic_raw_ptr_cast_if_possible<type_alias>(value_ptr_w_t) != nullptr;
+            = detail::dynamic_raw_ptr_cast_if_possible<type_alias>(value_ptr_w_t) != nullptr; // TODO:REVIEW
         if (holder_void_ptr) {
             // Note: inst->owned ignored.
             auto *holder_ptr = static_cast<holder_type *>(holder_void_ptr);
@@ -2521,7 +2516,6 @@ private:
             }
         }
         v_h.set_holder_constructed();
-        fflush(stderr); fprintf(stdout, "\nLOOOK init_instance _EXIT %s:%d\n", __FILE__, __LINE__); fflush(stdout);
     }
 
     // Deallocates an instance; via holder, if constructed; otherwise via operator delete.
