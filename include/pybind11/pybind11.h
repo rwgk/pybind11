@@ -2451,12 +2451,16 @@ private:
     template <typename H = holder_type,
               detail::enable_if_t<!detail::is_smart_holder<H>::value, int> = 0>
     static void init_instance(detail::instance *inst, const void *holder_ptr) {
+        fflush(stderr); fprintf(stdout, "\nLOOOK init_instance SP ENTRY %s\n", typeid(type).name()); fflush(stdout);
         auto v_h = inst->get_value_and_holder(detail::get_type_info(typeid(type)));
         if (!v_h.instance_registered()) {
+            fflush(stderr); fprintf(stdout, "\nLOOOK register_instance SP CALLing %s:%d\n", __FILE__, __LINE__); fflush(stdout);
             register_instance(inst, v_h.value_ptr(), v_h.type);
+            fflush(stderr); fprintf(stdout, "\nLOOOK register_instance SP CALLed_ %s:%d\n", __FILE__, __LINE__); fflush(stdout);
             v_h.set_instance_registered();
         }
         init_holder(inst, v_h, (const holder_type *) holder_ptr, v_h.value_ptr<type>());
+        fflush(stderr); fprintf(stdout, "\nLOOOK init_instance SP _EXIT\n"); fflush(stdout);
     }
 
     template <typename WrappedType>
@@ -2487,6 +2491,7 @@ private:
     template <typename H = holder_type,
               detail::enable_if_t<detail::is_smart_holder<H>::value, int> = 0>
     static void init_instance(detail::instance *inst, const void *holder_const_void_ptr) {
+        fflush(stderr); fprintf(stdout, "\nLOOOK init_instance SH ENTRY %s\n", typeid(type).name()); fflush(stdout);
         // Need for const_cast is a consequence of the type_info::init_instance type:
         // void (*init_instance)(instance *, const void *);
         auto *holder_void_ptr = const_cast<void *>(holder_const_void_ptr);
@@ -2516,6 +2521,7 @@ private:
             }
         }
         v_h.set_holder_constructed();
+        fflush(stderr); fprintf(stdout, "\nLOOOK init_instance SH _EXIT\n"); fflush(stdout);
     }
 
     // Deallocates an instance; via holder, if constructed; otherwise via operator delete.

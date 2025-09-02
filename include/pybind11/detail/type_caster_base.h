@@ -588,7 +588,7 @@ handle smart_holder_from_unique_ptr(std::unique_ptr<T, D> &&src,
     auto *inst_raw_ptr = reinterpret_cast<instance *>(inst.ptr());
     inst_raw_ptr->owned = true;
     void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr();
-    valueptr = src_raw_void_ptr;
+    valueptr = src_raw_void_ptr; // TODO: PROBABLY INCORRECT
 
     if (static_cast<void *>(src.get()) == src_raw_void_ptr) {
         // This is a multiple-inheritance situation that is incompatible with the current
@@ -654,11 +654,13 @@ handle smart_holder_from_shared_ptr(const std::shared_ptr<T> &src,
     auto inst = reinterpret_steal<object>(make_new_instance(tinfo->type));
     auto *inst_raw_ptr = reinterpret_cast<instance *>(inst.ptr());
     inst_raw_ptr->owned = true;
-    void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr(); // TODO:INSPECT
-    valueptr = src_raw_void_ptr;
+    void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr();
+    // valueptr = src_raw_void_ptr;
+    // assert(valueptr == const_cast<void *>(st.first)); THIS FAILS WHEN RUNNING UNIT TESTS
 
     auto smhldr
         = smart_holder::from_shared_ptr(std::shared_ptr<void>(src, const_cast<void *>(st.first)));
+    fflush(stderr); fprintf(stdout, "\nLOOOK _valueptr=PTR0x%016llu from_shared_ptr tp_name=%s cpp=%s\n", (unsigned long long) valueptr, tinfo->type->tp_name, tinfo->cpptype->name()); fflush(stdout);
     tinfo->init_instance(inst_raw_ptr, static_cast<const void *>(&smhldr));
 
     if (policy == return_value_policy::reference_internal) {
@@ -956,6 +958,7 @@ public:
                 throw cast_error("unhandled return_value_policy: should not happen!");
         }
 
+        fflush(stderr); fprintf(stdout, "\nLOOOK _valueptr=PTR0x%016llu type_caster_generic::cast tp_name=%s cpp=%s\n", (unsigned long long) valueptr, tinfo->type->tp_name, tinfo->cpptype->name()); fflush(stdout);
         tinfo->init_instance(wrapper, existing_holder);
 
         return inst.release();
