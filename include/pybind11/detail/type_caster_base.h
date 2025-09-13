@@ -603,20 +603,22 @@ handle smart_holder_from_unique_ptr(std::unique_ptr<T, D> &&src,
     auto inst = reinterpret_steal<object>(make_new_instance(tinfo->type));
     auto *inst_raw_ptr = reinterpret_cast<instance *>(inst.ptr());
     inst_raw_ptr->owned = true;
-#ifdef JUNK
+#ifndef JUNK
     void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr();
-    // valueptr = src_raw_void_ptr;
+    // valueptr = src_raw_void_ptr; // BAD
 fflush(stderr); fprintf(stdout, "\nLOOOK smart_holder_from_unique_ptr\n"); fflush(stdout);
     if (valueptr) {
     }
 #endif
 
+    void *drvd_raw_void_ptr = const_cast<void *>(st.first);
     if (static_cast<void *>(src.get()) == src_raw_void_ptr) {
         // This is a multiple-inheritance situation that is incompatible with the current
         // shared_from_this handling (see PR #3023). Is there a better solution?
-        src_raw_void_ptr = nullptr;
+        drvd_raw_void_ptr = nullptr;
     }
-    auto smhldr = smart_holder::from_unique_ptr(std::move(src), src_raw_void_ptr);
+    auto smhldr = smart_holder::from_unique_ptr(std::move(src), drvd_raw_void_ptr);
+    valueptr = smhldr.vptr.get();
     tinfo->init_instance(inst_raw_ptr, static_cast<const void *>(&smhldr));
 
     if (policy == return_value_policy::reference_internal) {
@@ -678,15 +680,16 @@ fflush(stdout);
     auto inst = reinterpret_steal<object>(make_new_instance(tinfo->type));
     auto *inst_raw_ptr = reinterpret_cast<instance *>(inst.ptr());
     inst_raw_ptr->owned = true;
-#ifdef JUNK
+#ifndef JUNK
     void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr();
     if (valueptr) {
     }
-    valueptr = src_raw_void_ptr; // BAD
+    //valueptr = src_raw_void_ptr; // BAD
 #endif
 
     auto smhldr
         = smart_holder::from_shared_ptr(std::shared_ptr<void>(src, const_cast<void *>(st.first)));
+    valueptr = smhldr.vptr.get();
 fflush(stderr);
 fprintf(stdout, "\nLOOOK             after from_shared_ptr     sh.vptr=PTR0x%016llu\n", (unsigned long long) smhldr.vptr.get());
 fflush(stdout);
