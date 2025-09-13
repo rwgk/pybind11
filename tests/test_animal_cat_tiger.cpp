@@ -31,7 +31,15 @@ struct Multi {
         Tiger(const Tiger &) = default;
         Tiger &operator=(const Tiger &) = default;
         ~Tiger() override = default;
-        std::shared_ptr<Animal> clone() const override { return std::make_shared<Tiger>(*this); }
+        std::shared_ptr<Animal> clone() const override {
+            std::shared_ptr<Tiger> sp_tiger = std::make_shared<Tiger>(*this);
+fflush(stderr);
+fprintf(stdout, "\nLOOOK _sp_tiger=PTR0x%016llu\n", (unsigned long long) sp_tiger.get());
+            std::shared_ptr<Animal> sp_animal = sp_tiger;
+fprintf(stdout, "\nLOOOK sp_animal=PTR0x%016llu\n", (unsigned long long) sp_animal.get());
+fflush(stdout);
+            return sp_animal;
+        }
     };
 };
 
