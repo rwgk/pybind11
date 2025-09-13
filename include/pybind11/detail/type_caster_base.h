@@ -682,7 +682,7 @@ fflush(stdout);
     void *&valueptr = values_and_holders(inst_raw_ptr).begin()->value_ptr();
     if (valueptr) {
     }
-    // valueptr = src_raw_void_ptr; // BAD
+    valueptr = src_raw_void_ptr; // BAD
 #endif
 
     auto smhldr

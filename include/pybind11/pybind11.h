@@ -2490,6 +2490,9 @@ private:
         // Need for const_cast is a consequence of the type_info::init_instance type:
         // void (*init_instance)(instance *, const void *);
         auto *holder_void_ptr = const_cast<void *>(holder_const_void_ptr);
+fflush(stderr);
+fprintf(stdout, "\nLOOOK holder_void_ptr=PTR0x%016llu\n", (unsigned long long) holder_void_ptr);
+fflush(stdout);
 
         auto v_h = inst->get_value_and_holder(detail::get_type_info(typeid(type)));
         if (!v_h.instance_registered()) {
@@ -2497,25 +2500,42 @@ private:
             v_h.set_instance_registered();
         }
         auto *uninitialized_location = std::addressof(v_h.holder<holder_type>());
-        auto *value_ptr_w_t = v_h.value_ptr<type>();
+        auto *holder_ptr = static_cast<holder_type *>(holder_void_ptr);
+        auto *value_ptr_w_t = v_h.value_ptr<type>(); // OLD
+fflush(stderr);
+fprintf(stdout, "\nLOOOK value_ptr_w_t#old=PTR0x%016llu\n", (unsigned long long) value_ptr_w_t);
+fflush(stdout);
+if (holder_void_ptr) {
+        auto *value_ptr_w_t_new = static_cast<type *>(holder_ptr->vptr.get()); // NEW
+fflush(stderr);
+fprintf(stdout, "\nLOOOK value_ptr_w_t_new=PTR0x%016llu\n", (unsigned long long) value_ptr_w_t_new);
+fflush(stdout);
+        value_ptr_w_t = value_ptr_w_t_new;
+}
         // Try downcast from `type` to `type_alias`:
         inst->is_alias
             = detail::dynamic_raw_ptr_cast_if_possible<type_alias>(value_ptr_w_t) != nullptr;
+fflush(stderr); fprintf(stdout, "\nLOOOK inst->is_alias=%s\n", inst->is_alias ? "true" : "false"); fflush(stdout);
         if (holder_void_ptr) {
+fflush(stderr); fprintf(stdout, "\nLOOOK init_instance CASE A\n"); fflush(stdout);
             // Note: inst->owned ignored.
-            auto *holder_ptr = static_cast<holder_type *>(holder_void_ptr);
             new (uninitialized_location) holder_type(std::move(*holder_ptr));
         } else if (!try_initialization_using_shared_from_this(
                        uninitialized_location, value_ptr_w_t, value_ptr_w_t)) {
             if (inst->owned) {
+fflush(stderr); fprintf(stdout, "\nLOOOK init_instance CASE C\n"); fflush(stdout);
                 new (uninitialized_location) holder_type(holder_type::from_raw_ptr_take_ownership(
                     value_ptr_w_t, /*void_cast_raw_ptr*/ inst->is_alias));
             } else {
+fflush(stderr); fprintf(stdout, "\nLOOOK init_instance CASE D\n"); fflush(stdout);
                 new (uninitialized_location)
                     holder_type(holder_type::from_raw_ptr_unowned(value_ptr_w_t));
             }
+        } else {
+fflush(stderr); fprintf(stdout, "\nLOOOK init_instance CASE B\n"); fflush(stdout);
         }
         v_h.set_holder_constructed();
+fflush(stderr); fprintf(stdout, "\nLOOOK init_instance DONE\n"); fflush(stdout);
     }
 
     // Deallocates an instance; via holder, if constructed; otherwise via operator delete.
