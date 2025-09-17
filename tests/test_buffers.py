@@ -399,3 +399,9 @@ def test_to_pybuffer_contiguity(type):
         m.get_py_buffer(dmat, m.PyBUF_ANY_CONTIGUOUS)
     with pytest.raises(expected_exception):
         m.get_py_buffer(dmat, m.PyBUF_F_CONTIGUOUS)
+
+
+def test_python_state_dict():
+    from pybind11_tests import get_python_state_dict
+
+    print(get_python_state_dict())

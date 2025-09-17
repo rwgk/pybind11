@@ -126,4 +126,6 @@ PYBIND11_MODULE(pybind11_tests, m, py::mod_gil_not_used()) {
         .def(py::init<>(&TestContext::createNewContextForInit))
         .def("__enter__", &TestContext::contextEnter)
         .def("__exit__", &TestContext::contextExit);
+
+    m.def("get_python_state_dict", &py::detail::get_python_state_dict);
 }
