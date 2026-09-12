@@ -272,24 +272,40 @@ jobs:
         include:
           - clang: 5
             std: 14
+            container: "silkeh/clang:5@sha256:68f994994d0c12563f4ce6bf34d78a19dc503e8e48778e4af33cf49abcd27133"
+            use_bullseye_snapshot: true
           - clang: 11
             std: 20
+            container: "silkeh/clang:11-bullseye@sha256:5d4e67f5a2de1b26f632b88343dc63b894c8ddc9b068114894cc56de8e888b61"
+            use_bullseye_snapshot: true
           - clang: 16
             std: 20
-            container_suffix: "-bullseye"
+            container: "silkeh/clang:16-bullseye"
           - clang: 18
             std: 20
             cxx_flags: "-Werror -Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls -Wunused-template"
-            container_suffix: "-bookworm"
+            container: "silkeh/clang:18-bookworm"
 
     name: "🐍 3 • Clang ${{ matrix.clang }} • C++${{ matrix.std }} • x64${{ matrix.cxx_flags && ' • cxx_flags' || '' }}"
-    container: "silkeh/clang:${{ matrix.clang }}${{ matrix.container_suffix }}"
+    container: "${{ matrix.container }}"
     timeout-minutes: 90
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Add wget and python3
+    - name: Use the pinned Debian snapshot for legacy Clang
+      if: matrix.use_bullseye_snapshot
+      run: |
+        # Clang 5 and 11 have no Bookworm images. Keep their Bullseye package
+        # set coherent after the end of Bullseye LTS by using its final snapshot.
+        rm -f /etc/apt/sources.list.d/*
+        printf '%s\n' \
+          'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20260831T000000Z/ bullseye main' \
+          'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20260831T000000Z/ bullseye-updates main' \
+          'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20260831T000000Z/ bullseye-security main' \
+          > /etc/apt/sources.list
+
+    - name: Install Python 3 and test dependencies
       run: apt-get update && apt-get install -y python3-dev python3-numpy python3-pytest libeigen3-dev
 
     - name: Configure
