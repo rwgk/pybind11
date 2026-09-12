@@ -476,10 +476,12 @@ jobs:
         include:
           - gcc: 9
             std: 20
-            container: "gcc:9-bookworm"
+            container: "gcc:9-bullseye@sha256:a9aba821155db99d0800920f27bf3a94ead6f9dedf330a2e2ce38da73f5370e3"
+            use_bullseye_snapshot: true
           - gcc: 10
             std: 17
-            container: "gcc:10-bookworm"
+            container: "gcc:10-bullseye@sha256:19b31d0b2b263047b173e4e253d91f199d99c082973f13604d2913252c13309e"
+            use_bullseye_snapshot: true
           - gcc: 13
             std: 20
             container: "gcc:13"
@@ -491,6 +493,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+
+    - name: Use the pinned Debian snapshot for legacy GCC
+      if: matrix.use_bullseye_snapshot
+      run: |
+        # The GCC 9 and 10 Bookworm images cannot run Bookworm's apt with
+        # their older libstdc++. Keep the coherent Bullseye userspace instead.
+        rm -f /etc/apt/sources.list.d/*
+        printf '%s\n' \
+          'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20260831T000000Z/ bullseye main' \
+          'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20260831T000000Z/ bullseye-updates main' \
+          'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20260831T000000Z/ bullseye-security main' \
+          > /etc/apt/sources.list
 
     - name: Add Python 3
       run: apt-get update; apt-get install -y python3-dev python3-numpy python3-pytest python3-pip libeigen3-dev
