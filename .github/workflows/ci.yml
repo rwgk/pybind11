@@ -293,7 +293,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Use the pinned Debian snapshot for legacy Clang
+    - name: Use the pinned Debian snapshot for legacy Clang — see PR 6175
       if: matrix.use_bullseye_snapshot
       run: |
         # Clang 5 and 11 have no Bookworm images. Keep their Bullseye package
@@ -494,7 +494,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Use the pinned Debian snapshot for legacy GCC
+    - name: Use the pinned Debian snapshot for legacy GCC — see PR 6175
       if: matrix.use_bullseye_snapshot
       run: |
         # The GCC 9 and 10 Bookworm images cannot run Bookworm's apt with
