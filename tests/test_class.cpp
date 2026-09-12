@@ -641,7 +641,7 @@ TEST_SUBMODULE(class_, m) {
                      }
                      new (&self) OldStyleInit(x);
                  })
-            .def("__setstate__", [](py::object self, int x) {
+            .def("__setstate__", [](const py::object &self, int x) {
                 auto &typed_self = self.cast<OldStyleInit &>();
                 new (&typed_self) OldStyleInit(x);
             });
