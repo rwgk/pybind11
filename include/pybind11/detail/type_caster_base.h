@@ -525,7 +525,7 @@ PYBIND11_NOINLINE void instance::allocate_layout() {
             = reinterpret_cast<std::uint8_t *>(&nonsimple.values_and_holders[flags_at]);
     }
     owned = true;
-    construction_in_progress = false;
+    old_style_init_active = false;
 }
 
 // NOLINTNEXTLINE(readability-make-member-function-const)
@@ -535,37 +535,37 @@ PYBIND11_NOINLINE void instance::deallocate_layout() {
     }
 }
 
-/// RAII helper marking the instance behind `v_h` as "currently being constructed", which is the
-/// only situation in which `type_caster_generic::load_value()` will lazily allocate storage for a
-/// C++ value that has not been constructed yet. Passing `nullptr` makes this a no-op. Nesting is
-/// supported: the previous state is restored, not unconditionally cleared.
+/// RAII helper preserving lazy value allocation for a constructor chain containing a deprecated
+/// old-style placement-new `__init__`/`__setstate__`. Passing `nullptr` makes this a no-op. The
+/// compatibility window covers the whole chain; it does not attempt to distinguish the old-style
+/// `self` load from reentrant or later-argument loads. Nesting restores the previous state.
 ///
 /// If construction fails (the holder was never constructed) after storage was lazily allocated
 /// inside this scope, the destructor frees that storage and resets the value pointer, so that the
 /// uninitialized-value guard in `load_value()` stays effective for later uses of the instance.
-class instance_construction_scope {
+class old_style_init_scope {
 public:
-    explicit instance_construction_scope(value_and_holder *v_h) : v_h_{v_h} {
+    explicit old_style_init_scope(value_and_holder *v_h) : v_h_{v_h} {
         if (v_h_ != nullptr) {
-            was_in_progress_ = v_h_->inst->construction_in_progress;
+            was_active_ = v_h_->inst->old_style_init_active;
             value_was_null_ = v_h_->value_ptr() == nullptr;
-            v_h_->inst->construction_in_progress = true;
+            v_h_->inst->old_style_init_active = true;
         }
     }
-    ~instance_construction_scope() {
+    ~old_style_init_scope() {
         if (v_h_ != nullptr) {
-            v_h_->inst->construction_in_progress = was_in_progress_;
+            v_h_->inst->old_style_init_active = was_active_;
             if (value_was_null_ && !v_h_->holder_constructed() && v_h_->value_ptr() != nullptr) {
                 v_h_->type->dealloc(*v_h_); // Frees the storage and nulls the value pointer.
             }
         }
     }
-    instance_construction_scope(const instance_construction_scope &) = delete;
-    instance_construction_scope &operator=(const instance_construction_scope &) = delete;
+    old_style_init_scope(const old_style_init_scope &) = delete;
+    old_style_init_scope &operator=(const old_style_init_scope &) = delete;
 
 private:
     value_and_holder *v_h_;
-    bool was_in_progress_ = false;
+    bool was_active_ = false;
     bool value_was_null_ = false;
 };
 
@@ -1182,7 +1182,7 @@ public:
             // with `__new__()`, bypassing `__init__()` -- and handing out a pointer to
             // uninitialized memory from here is undefined behavior (typically a segfault on the
             // first virtual call). Fail loudly instead.
-            if (!v_h.inst->construction_in_progress) {
+            if (!v_h.inst->old_style_init_active) {
                 throw value_error("Missing value for wrapped C++ type `"
                                   + clean_type_id(cpptype->name())
                                   + "`: Python instance is uninitialized: the C++ object was "

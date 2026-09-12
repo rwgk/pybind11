@@ -255,18 +255,22 @@ def test_inheritance_init(msg):
 def test_new_bypasses_init():
     """`__new__` allocates the Python object but not the C++ one; using the instance before
     `__init__` has run must raise instead of segfaulting."""
-    obj = m.NewNoInit.__new__(m.NewNoInit)
 
-    for use in (obj.data, obj.v_data, obj.__getstate__):
-        with pytest.raises(ValueError) as exc_info:
-            use()
-        assert "Python instance is uninitialized" in str(exc_info.value)
-        assert "NewNoInit" in str(exc_info.value)
+    class PythonDerived(m.NewNoInit):
+        pass
 
-    # Calling `__init__()` is the sanctioned way to finish an object made with `__new__()`.
-    obj.__init__(42)
-    assert obj.data() == 42
-    assert obj.v_data() == 42
+    for cls in (m.NewNoInit, PythonDerived):
+        obj = cls.__new__(cls)
+        for use in (obj.data, obj.v_data, obj.__getstate__):
+            with pytest.raises(ValueError) as exc_info:
+                use()
+            assert "Python instance is uninitialized" in str(exc_info.value)
+            assert "NewNoInit" in str(exc_info.value)
+
+        # Calling `__init__()` is the sanctioned way to finish an object made with `__new__()`.
+        obj.__init__(42)
+        assert obj.data() == 42
+        assert obj.v_data() == 42
 
 
 def test_new_then_setstate():
@@ -302,6 +306,37 @@ def test_failed_old_style_init_does_not_leave_lazy_storage():
     assert obj.v_data() == 42
 
 
+def test_old_style_setstate_remains_supported():
+    """Deprecated placement-new `__setstate__` may still obtain storage inside its callback."""
+    obj = m.OldStyleInit.__new__(m.OldStyleInit)
+    obj.__setstate__(43)
+    assert obj.data() == 43
+
+
+def test_old_style_init_reentrant_load_is_out_of_scope():
+    """The minimal fix retains the historical broad lazy-allocation window while an old-style
+    constructor chain is active. It does not promise to reject reentrant loads in that window."""
+    obj = m.OldStyleInit.__new__(m.OldStyleInit)
+    seen = {}
+
+    class LoadOnIndex:
+        def __index__(self):
+            seen["accepted"] = m.accept_old_style_init(obj)
+            raise TypeError("stop the constructor")
+
+    with pytest.raises(TypeError):
+        obj.__init__(LoadOnIndex())
+
+    assert seen == {"accepted": True}
+
+    # Failure cleanup removes the raw storage, so subsequent ordinary loads are rejected and a
+    # normal initialization retry remains possible.
+    with pytest.raises(ValueError, match="uninitialized"):
+        m.accept_old_style_init(obj)
+    obj.__init__(44)
+    assert obj.data() == 44
+
+
 def test_reentrant_load_during_new_style_init():
     """New-style constructors never need lazy allocation, so passing the half-built instance
     to another bound function while `__init__` runs must raise, not hand out garbage."""
@@ -310,8 +345,8 @@ def test_reentrant_load_during_new_style_init():
 
     class Evil:
         def __index__(self):
-            # Runs during int conversion of the constructor argument, while
-            # construction_in_progress is set on `obj` and its C++ value is unconstructed.
+            # Runs during int conversion of a pure new-style constructor. Its chain has no
+            # compatibility window for lazy allocation.
             try:
                 seen["data"] = obj.data()
             except ValueError as exc:

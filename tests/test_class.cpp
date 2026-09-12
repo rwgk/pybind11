@@ -631,16 +631,25 @@ TEST_SUBMODULE(class_, m) {
                             return NewNoInit(t[0].cast<int>());
                         }));
 
-    py::class_<OldStyleInit>(m, "OldStyleInit")
-        .def("__init__",
-             [](OldStyleInit &self, int x) {
-                 if (x < 0) {
-                     throw std::runtime_error("negative data");
-                 }
-                 new (&self) OldStyleInit(x);
-             })
-        .def("data", &OldStyleInit::data)
-        .def("v_data", &OldStyleInit::v_data);
+    py::class_<OldStyleInit> old_style_init(m, "OldStyleInit");
+    ignoreOldStyleInitWarnings([&old_style_init]() {
+        old_style_init
+            .def("__init__",
+                 [](OldStyleInit &self, int x) {
+                     if (x < 0) {
+                         throw std::runtime_error("negative data");
+                     }
+                     new (&self) OldStyleInit(x);
+                 })
+            .def("__setstate__", [](py::object self, int x) {
+                auto &typed_self = self.cast<OldStyleInit &>();
+                new (&typed_self) OldStyleInit(x);
+            });
+    });
+    old_style_init.def("data", &OldStyleInit::data).def("v_data", &OldStyleInit::v_data);
+    // This probe intentionally does not dereference the pointer. It documents the narrow scope of
+    // this fix without itself reading storage before an OldStyleInit lifetime has begun.
+    m.def("accept_old_style_init", [](OldStyleInit *value) { return value != nullptr; });
 }
 
 template <int N>

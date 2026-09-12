@@ -676,11 +676,10 @@ struct instance {
     bool has_patients : 1;
     /// If true, this Python object needs to be kept alive for the lifetime of the C++ value.
     bool is_alias : 1;
-    /// If true, an old-style placement-new `__init__`/`__setstate__` is currently constructing the
-    /// C++ value for this instance. This is the *only* situation in which
-    /// `type_caster_generic::load_value()` may lazily allocate storage for a value that has not
-    /// been constructed yet; see `instance_construction_scope` and `cpp_function::dispatcher()`.
-    bool construction_in_progress : 1;
+    /// If true, this instance is being dispatched through a constructor chain containing a
+    /// deprecated old-style placement-new `__init__`/`__setstate__`. Such chains retain the
+    /// historical ability to lazily allocate C++ value storage; see `old_style_init_scope`.
+    bool old_style_init_active : 1;
 
     /// Initializes all of the above type/values/holders data (but not the instance values
     /// themselves)
