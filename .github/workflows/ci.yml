@@ -280,7 +280,7 @@ jobs:
             use_bullseye_snapshot: true
           - clang: 16
             std: 20
-            container: "silkeh/clang:16-bullseye"
+            container: "silkeh/clang:16-bookworm"
           - clang: 18
             std: 20
             cxx_flags: "-Werror -Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls -Wunused-template"
@@ -474,12 +474,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { gcc: 9, std: 20 }
-          - { gcc: 10, std: 17 }
-          - { gcc: 13, std: 20, cxx_flags: "-Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls" }
+          - gcc: 9
+            std: 20
+            container: "gcc:9-bookworm"
+          - gcc: 10
+            std: 17
+            container: "gcc:10-bookworm"
+          - gcc: 13
+            std: 20
+            container: "gcc:13"
+            cxx_flags: "-Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls"
 
     name: "🐍 3 • GCC ${{ matrix.gcc }} • C++${{ matrix.std }} • x64${{ matrix.cxx_flags && ' • cxx_flags' || '' }}"
-    container: "gcc:${{ matrix.gcc }}"
+    container: "${{ matrix.container }}"
     timeout-minutes: 90
 
     steps:
